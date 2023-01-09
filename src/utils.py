@@ -2,7 +2,9 @@ import pyproj
 from Errors import ReferentialError
 
 # ---------------------------------------------------
-def project_coordinates(coordinates, initial_referential, output_referential):
+def project_coordinates(
+    coordinates: list, initial_referential: int, output_referential: int
+):
     """Return a projected list of coordinates in a specified referential among 3857 (standard projection) or 4326 (GPS)"""
     assert isinstance(
         initial_referential, int
@@ -11,7 +13,6 @@ def project_coordinates(coordinates, initial_referential, output_referential):
     assert isinstance(
         output_referential, int
     ), "ERROR: output_referential must be an integer!"
-    round_number = 7
     list_referential = [3857, 4326]
     # check for correct referential
     if (initial_referential or output_referential) not in list_referential:
@@ -26,7 +27,5 @@ def project_coordinates(coordinates, initial_referential, output_referential):
     transformer = pyproj.Transformer.from_proj(initial_proj, output_proj)
     for coord in coordinates:
         x, y = transformer.transform(coord[0], coord[1])
-        x = round(x, round_number)
-        y = round(y, round_number)
         list_projected_coords.append((x, y))
     return list_projected_coords
