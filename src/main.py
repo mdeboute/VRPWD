@@ -3,17 +3,18 @@ from Data import Data
 
 
 def print_usage():
-    print("Usage: python3 main.py <file_path>")
+    print("Usage: python3 main.py <map_file_path> <demands_file_path>")
 
 
 def main():
-    if len(sys.argv) != 2 or sys.argv[1] == "-h" or sys.argv[1] == "--help":
+    if len(sys.argv) != 3 or sys.argv[1] == "-h" or sys.argv[1] == "--help":
         print_usage()
         sys.exit(1)
 
-    file = sys.argv[1]
+    map_file = sys.argv[1]
+    demands_file = sys.argv[2]
 
-    data = Data(file)
+    data = Data(map_file, demands_file)
     data.plot_graph()
 
 
