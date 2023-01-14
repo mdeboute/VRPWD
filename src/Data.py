@@ -9,6 +9,8 @@ from utils import project_coordinates
 
 
 class Data(object):
+    """This class is used to create the graph from the json file"""
+
     def __init__(self, file):
         self._brut_df = pd.read_json(file)
         self.nodes = self._create_nodes()
