@@ -7,12 +7,15 @@ import networkx as nx
 import folium
 from utils import project_coordinates
 
+_MAP_FILE_NAME = "map.json"
+_DEMAND_FILE_NAME = "demands.json"
+
 
 class Data(object):
-    """This class is used to create the graph from the json file"""
+    """This class is used to create the graph from the instance directory"""
 
-    def __init__(self, file):
-        self._brut_df = pd.read_json(file)
+    def __init__(self, instance_dir):
+        self._map_df = pd.read_json(instance_dir + _MAP_FILE_NAME)
         self.nodes = self._create_nodes()
         self.edges = self._create_edges()
         self.graph = self._create_graph()
@@ -22,7 +25,7 @@ class Data(object):
         start_time = time.time()
         print("==================== NODES CREATION ===================")
         list_nodes = []
-        for _, row in self._brut_df.iterrows():
+        for _, row in self._map_df.iterrows():
             node_1 = Node(row["lat_min"], row["lon_min"])
             node_2 = Node(row["lat_max"], row["lon_max"])
             list_nodes.append(node_1)
@@ -52,7 +55,7 @@ class Data(object):
         rows_gdf_edges = []
         cols_gdf_edges = ["Edge Object", "speed", "highway"]
         # loop over edges
-        for index, row in self._brut_df.iterrows():
+        for index, row in self._map_df.iterrows():
             # get the two nodes coordinates
             x = row["lat_min"]
             y = row["lon_min"]

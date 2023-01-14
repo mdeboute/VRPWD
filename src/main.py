@@ -3,7 +3,7 @@ from Data import Data
 
 
 def print_usage():
-    print("Usage: python3 main.py <file_path>")
+    print("Usage: python3 main.py <instance_dir>")
 
 
 def main():
@@ -11,9 +11,9 @@ def main():
         print_usage()
         sys.exit(1)
 
-    file = sys.argv[1]
+    instance_dir = sys.argv[1]
 
-    data = Data(file)
+    data = Data(instance_dir)
     data.plot_graph()
 
 
