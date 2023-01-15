@@ -16,6 +16,7 @@ def main():
 
     data = Data(map_file, demands_file)
     data.plot_graph()
+    data.plot_nodes_html()
 
 
 if __name__ == "__main__":
