@@ -145,6 +145,7 @@ class Data(object):
         list_coords = []
         # Create map
         m = folium.Map(location=[44.838633, 0.540983], zoom_start=13)
+        # Add points to the map according to the demand
         for _, row in self.nodes.iterrows():
             coord = (row['lat'], row['lon'])
             list_coords.append(coord)
@@ -152,8 +153,6 @@ class Data(object):
                 folium.Marker(coord,icon=folium.Icon(color='red')).add_to(m)
             else:
                 folium.Marker(coord,icon=folium.Icon(color='blue')).add_to(m)
-        # Add points to map
-        for coords in list_coords:
-            folium.Marker(coords).add_to(m)
+        
         # Show map
         m.save("assets/map.html")
