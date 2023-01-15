@@ -46,7 +46,7 @@ class Data(object):
                 speed = 60
             if osm_type == "secondary":
                 speed = 45
-            else:
+            if osm_type == "tertiary":
                 speed = 30
             m_per_s_speed=round(speed/3.6,2)
             travel_time=length/m_per_s_speed
