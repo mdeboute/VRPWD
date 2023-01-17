@@ -1,5 +1,6 @@
 import pandas as pd
 import geopandas as gpd
+import random
 import matplotlib.pyplot as plt
 from geopy.distance import geodesic
 import time
@@ -91,8 +92,8 @@ class Data(object):
     def _create_graph(self):
         print("==================== GRAPH CREATION ====================")
         start_time = time.time()
-        # create empty directed graph
-        graph = nx.DiGraph()
+        # create empty undirected graph
+        graph = nx.Graph()
         # add nodes
         for idx, row in self.nodes.iterrows():
             lat = row["lat"]
@@ -130,61 +131,40 @@ class Data(object):
         print("processing_time: ", processing_time)
         return graph
 
-    def plot_graph(self):
-        """plot the graph"""
-        print("==================== PLOT GRAPH ====================")
-        # Draw graph
-        coordinates = nx.get_node_attributes(self.graph, "coordinates")
-        node_colors = []
-        count = 0
-        for node in self.graph.nodes():
-            # print(self.graph.nodes[node])
-            if self.graph.nodes[node]["demand"] > 0:
-                node_colors.append("r")
-                count += 1
-            else:
-                node_colors.append("b")
-        nx.draw(self.graph, coordinates, node_color=node_colors, with_labels=True)
-        # Show plot
-        print("number_of_demand_nodes: ", count)
-        plt.show()
-
-    def plot_nodes_html(self):
-        """plot the nodes on a interactive html map"""
-        list_coords = []
-        # Create map
-        m = folium.Map(location=[44.838633, 0.540983], zoom_start=13)
-        # Add points to the map according to the demand
-        for _, row in self.nodes.iterrows():
-            coord = (row["lat"], row["lon"])
-            list_coords.append(coord)
-            if row["demand"] > 0:
-                folium.Marker(coord, icon=folium.Icon(color="red")).add_to(m)
-            else:
-                folium.Marker(coord, icon=folium.Icon(color="blue")).add_to(m)
-        # Show map
-        m.save("assets/map.html")
-
     def _create_time_matrix(self):
-        """Create the time travel matrix from the road point of view"""
-
-        print("===================== CREATE TIME MATRIX =====================")
-        start_time = time.time()
-        # create matrix of dimension NxN with N the number of nodes in the graph
-        number_of_nodes = self.graph.number_of_nodes()
-        print("number_of_nodes: ", number_of_nodes)
-        matrix = [
-            [None for i in range(1, number_of_nodes + 1)]
-            for j in range(1, number_of_nodes + 1)
-        ]
-        print("len_matrix: ", len(matrix) ** 2)
-        # loop over edges to get travel time
-        for u, v, data in self.graph.edges(data=True):
-            matrix[u - 1][v - 1] = data["travel_time"]
-        # print(matrix)
-        end_time = time.time()
-        processing_time = end_time - start_time
-        print("processing_time: ", processing_time)
+        """create the D+1xD+1 travel time matrix from the road point of view
+        with D the number of demand nodes +1 for the depot.
+        By default, the depot is at the end of the list 'demand_nodes' """
+        print("==================CREATE TIME MATRIX=====================")
+        start_time=time.time()
+        demand_nodes=[]
+        depot=None
+        #get demand nodes
+        for node in self.graph.nodes():
+            if self.graph.nodes[node]['demand']>0:
+                print()
+                demand_nodes.append(node)
+        print('demand_nodes = ',demand_nodes)
+        #select a random nodes different from those with demand>0
+        while (depot == None) or (depot in demand_nodes):
+            depot=random.randint(1,self.graph.number_of_nodes())
+        print('depot = ',depot)
+        #add depot to the list of demand_nodes in order to calculate travel_time between demand nodes and depot
+        demand_nodes.append(depot)
+        print("demand_nodes and depot = ",demand_nodes)
+        #create empty matrix 
+        matrix=[[None for i in range(1,len(demand_nodes)+1)] for j in range(1,len(demand_nodes)+1)]
+        #compute shortest path in term of travel time
+        for current_node in demand_nodes:
+            for other_node in demand_nodes:
+                if current_node != other_node:
+                    travel_time = nx.dijkstra_path_length(self.graph, current_node, other_node, weight='travel_time')
+                else:
+                    travel_time=0
+                matrix[demand_nodes.index(current_node)][demand_nodes.index(other_node)]=travel_time
+        end_time=time.time()
+        processing_time=end_time-start_time
+        print("processing_time = ",processing_time)
         return matrix
 
     def _create_drone_matrix(self, drone_speed):
@@ -228,3 +208,40 @@ class Data(object):
         processing_time = end_time - start_time
         print("processing_time: ", processing_time)
         return matrix
+
+    def plot_graph(self):
+        """plot the graph"""
+        print("==================== PLOT GRAPH ====================")
+        # Draw graph
+        coordinates = nx.get_node_attributes(self.graph, "coordinates")
+        node_colors = []
+        count = 0
+        for node in self.graph.nodes():
+            # print(self.graph.nodes[node])
+            if self.graph.nodes[node]["demand"] > 0:
+                node_colors.append("r")
+                count += 1
+            else:
+                node_colors.append("b")
+        nx.draw(self.graph, coordinates, node_color=node_colors, with_labels=True)
+        # Show plot
+        print("number_of_demand_nodes: ", count)
+        plt.show()
+
+    def plot_nodes_html(self):
+        """plot the nodes on a interactive html map"""
+        list_coords = []
+        # Create map
+        m = folium.Map(location=[44.838633, 0.540983], zoom_start=13)
+        # Add points to the map according to the demand
+        for _, row in self.nodes.iterrows():
+            coord = (row["lat"], row["lon"])
+            list_coords.append(coord)
+            if row["demand"] > 0:
+                folium.Marker(coord, icon=folium.Icon(color="red")).add_to(m)
+            else:
+                folium.Marker(coord, icon=folium.Icon(color="blue")).add_to(m)
+        # Show map
+        m.save("assets/map.html")
+
+
