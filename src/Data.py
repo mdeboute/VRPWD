@@ -2,66 +2,77 @@ import pandas as pd
 import geopandas as gpd
 import matplotlib.pyplot as plt
 from geopy.distance import geodesic
-from Node import Node
-from Edge import Edge
 import time
 import networkx as nx
 import folium
-from utils import project_coordinates
+from pathlib import Path
 
 
 class Data(object):
-    """This class is used to create the graph from the json file"""
-    def __init__(self, map_file, demands_file):
-        self._brut_df_map = pd.read_json(map_file)
-        self._brut_df_demand = pd.read_json(demands_file)
-        self.nodes = self._create_nodes_and_edges_df()[0]
-        self.edges = self._create_nodes_and_edges_df()[1]
+    """This class is used to store the instance information"""
+
+    def __init__(self, instance_dir):
+        self.__MAP_PATH = Path(instance_dir).joinpath("map.json")
+        self.__DEMANDS_PATH = Path(instance_dir).joinpath("demands.json")
+        self._brut_df_map = pd.read_json(self.__MAP_PATH)
+        self._brut_df_demands = pd.read_json(self.__DEMANDS_PATH)
+        self.nodes, self.edges = self._create_nodes_and_edges_df()
         self.graph = self._create_graph()
-        self.road_matrix = self._create_road_matrix()
-        self.drone_matrix = self._create_drone_matrix(50)
-        #self.projected_graph = self._create_projected_graph(4326, 3857)
+        self.time_matrix = self._create_time_matrix()
+        self.drone_matrix = self._create_drone_matrix(drone_speed=50)
 
     def _create_nodes_and_edges_df(self):
         start_time = time.time()
-        print("==================== NODES AND EDGES CREATION ===================")
+        print("=================== NODES AND EDGES CREATION ===================")
         list_coords = []
         rows_gdf_nodes = []
         cols_gdf_nodes = ["lat", "lon", "demand"]
         rows_gdf_edges = []
-        cols_gdf_edges = ["src", "dest", "length", "speed", "osm_id", "osm_type","travel_time"]
+        cols_gdf_edges = [
+            "src",
+            "dest",
+            "length",
+            "speed",
+            "osm_id",
+            "osm_type",
+            "travel_time",
+        ]
+
         for _, row in self._brut_df_map.iterrows():
-            if (row["lat_min"],row["lon_min"]) in list_coords:
-                idx_src=list_coords.index((row["lat_min"],row["lon_min"]))+1
+            if (row["lat_min"], row["lon_min"]) in list_coords:
+                idx_src = list_coords.index((row["lat_min"], row["lon_min"])) + 1
             else:
-                list_coords.append((row["lat_min"],row["lon_min"]))
-                idx_src=len(list_coords)
-            if (row["lat_max"],row["lon_max"]) in list_coords:
-                idx_dest=list_coords.index((row["lat_max"],row["lon_max"]))+1
+                list_coords.append((row["lat_min"], row["lon_min"]))
+                idx_src = len(list_coords)
+            if (row["lat_max"], row["lon_max"]) in list_coords:
+                idx_dest = list_coords.index((row["lat_max"], row["lon_max"])) + 1
             else:
-                list_coords.append((row["lat_max"],row["lon_max"]))
-                idx_dest=len(list_coords)
-            length=row["length"]
-            osm_id=row["osmid"]
-            osm_type=row["type"]
+                list_coords.append((row["lat_max"], row["lon_max"]))
+                idx_dest = len(list_coords)
+
+            length = row["length"]
+            osm_id = row["osmid"]
+            osm_type = row["type"]
             if osm_type == "primary":
                 speed = 60
             if osm_type == "secondary":
                 speed = 45
             if osm_type == "tertiary":
                 speed = 30
-            m_per_s_speed=round(speed/3.6,2)
-            travel_time=length/m_per_s_speed
-            rows_gdf_edges.append({
-                "src":idx_src,
-                "dest":idx_dest,
-                "length":length,
-                "speed":speed,
-                "osm_id":osm_id,
-                "osm_type":osm_type,
-                "travel_time":travel_time
-            }) 
-        gdf_edges=gpd.GeoDataFrame(rows_gdf_edges,columns=cols_gdf_edges)
+            m_per_s_speed = round(speed / 3.6, 2)
+            travel_time = length / m_per_s_speed
+            rows_gdf_edges.append(
+                {
+                    "src": idx_src,
+                    "dest": idx_dest,
+                    "length": length,
+                    "speed": speed,
+                    "osm_id": osm_id,
+                    "osm_type": osm_type,
+                    "travel_time": travel_time,
+                }
+            )
+        gdf_edges = gpd.GeoDataFrame(rows_gdf_edges, columns=cols_gdf_edges)
         gdf_edges.index = range(1, len(gdf_edges) + 1)
         for coord in list_coords:
             x = coord[0]
@@ -75,71 +86,67 @@ class Data(object):
         end_time = time.time()
         processing_time = end_time - start_time
         print("processing_time: ", processing_time)
-        print(gdf_nodes)
-        print(gdf_edges)
-        return gdf_nodes,gdf_edges
+        return gdf_nodes, gdf_edges
 
     def _create_graph(self):
-        print("================= GRAPH CREATION ====================")
-        start_time=time.time()
+        print("==================== GRAPH CREATION ====================")
+        start_time = time.time()
         # create empty directed graph
         graph = nx.DiGraph()
         # add nodes
         for idx, row in self.nodes.iterrows():
             lat = row["lat"]
             lon = row["lon"]
-            coord = (lon,lat)
-            d=row["demand"]
-            graph.add_node(idx,coordinates=coord,demand=d)
+            coord = (lon, lat)
+            d = row["demand"]
+            graph.add_node(idx, coordinates=coord, demand=d)
         # add edges
         for idx, row in self.edges.iterrows():
-            src=row["src"]
-            dest=row["dest"]
-            travel_time=row["travel_time"]
-            graph.add_edge(src, dest, id=idx,travel_time=travel_time)
-        # print graph info
-        print("graph: ", graph)
-        #add demand
-        for _,row in self._brut_df_demand.iterrows():
-            point=(row["lat"],row["lon"])
-            demand=row['amount']
-            nearest_node=None
-            nearest_distance=float('inf')
+            src = row["src"]
+            dest = row["dest"]
+            travel_time = row["travel_time"]
+            graph.add_edge(src, dest, id=idx, travel_time=travel_time)
+        # add demand
+        for _, row in self._brut_df_demands.iterrows():
+            point = (row["lat"], row["lon"])
+            demand = row["amount"]
+            nearest_node = None
+            nearest_distance = float("inf")
             for node in graph.nodes:
-                node_coord=graph.nodes[node]['coordinates']
-                node_coords_inversed=(node_coord[1],node_coord[0])
-                #compute euclidian distance through Haversine formula
-                dist=geodesic(point,node_coords_inversed).km
-                if dist<nearest_distance:
-                    nearest_distance=dist
-                    nearest_node=node
-            #update the demand
-            #in the graph
-            graph.nodes[nearest_node].update({'demand': demand})
-            #in the df
-            self.nodes.loc[nearest_node,'demand']=demand
-        end_time=time.time()
-        processing_time=end_time-start_time
-        print('processing_time = ',processing_time)
+                node_coord = graph.nodes[node]["coordinates"]
+                node_coords_inversed = (node_coord[1], node_coord[0])
+                # compute euclidian distance through Haversine formula
+                dist = geodesic(point, node_coords_inversed).km
+                if dist < nearest_distance:
+                    nearest_distance = dist
+                    nearest_node = node
+            # update the demand
+            # in the graph
+            graph.nodes[nearest_node].update({"demand": demand})
+            # in the df
+            self.nodes.loc[nearest_node, "demand"] = demand
+        end_time = time.time()
+        processing_time = end_time - start_time
+        print("processing_time: ", processing_time)
         return graph
-    
+
     def plot_graph(self):
         """plot the graph"""
-        print('#=============PLOT GRAPH====================')
+        print("==================== PLOT GRAPH ====================")
         # Draw graph
-        coordinates = nx.get_node_attributes(self.graph, 'coordinates')
+        coordinates = nx.get_node_attributes(self.graph, "coordinates")
         node_colors = []
-        count=0
+        count = 0
         for node in self.graph.nodes():
-            #print(self.graph.nodes[node])
-            if self.graph.nodes[node]['demand'] > 0:
-                node_colors.append('r')
-                count+=1
+            # print(self.graph.nodes[node])
+            if self.graph.nodes[node]["demand"] > 0:
+                node_colors.append("r")
+                count += 1
             else:
-                node_colors.append('b')
-        nx.draw(self.graph,coordinates,node_color=node_colors, with_labels=True)
+                node_colors.append("b")
+        nx.draw(self.graph, coordinates, node_color=node_colors, with_labels=True)
         # Show plot
-        print('nb demand node = ',count)
+        print("number_of_demand_nodes: ", count)
         plt.show()
 
     def plot_nodes_html(self):
@@ -149,68 +156,75 @@ class Data(object):
         m = folium.Map(location=[44.838633, 0.540983], zoom_start=13)
         # Add points to the map according to the demand
         for _, row in self.nodes.iterrows():
-            coord = (row['lat'], row['lon'])
+            coord = (row["lat"], row["lon"])
             list_coords.append(coord)
-            if row['demand']>0: 
-                folium.Marker(coord,icon=folium.Icon(color='red')).add_to(m)
+            if row["demand"] > 0:
+                folium.Marker(coord, icon=folium.Icon(color="red")).add_to(m)
             else:
-                folium.Marker(coord,icon=folium.Icon(color='blue')).add_to(m)
+                folium.Marker(coord, icon=folium.Icon(color="blue")).add_to(m)
         # Show map
         m.save("assets/map.html")
 
-    def _create_road_matrix(self):
-        """create the time travel matrix from the road point of view"""
-        print("==================CREATE ROAD MATRIX=====================")
-        start_time=time.time()
-        #create matrix of dimension NxN with N the number of nodes in the graph
-        number_of_nodes=self.graph.number_of_nodes()
-        print('number_of_nodes = ',number_of_nodes)
-        matrix=[[None for i in range(1,number_of_nodes+1)] for j in range(1,number_of_nodes+1)]
-        print('len matrix = ',len(matrix))
-        #loop over edges to get travel time
+    def _create_time_matrix(self):
+        """Create the time travel matrix from the road point of view"""
+
+        print("===================== CREATE TIME MATRIX =====================")
+        start_time = time.time()
+        # create matrix of dimension NxN with N the number of nodes in the graph
+        number_of_nodes = self.graph.number_of_nodes()
+        print("number_of_nodes: ", number_of_nodes)
+        matrix = [
+            [None for i in range(1, number_of_nodes + 1)]
+            for j in range(1, number_of_nodes + 1)
+        ]
+        print("len_matrix: ", len(matrix) ** 2)
+        # loop over edges to get travel time
         for u, v, data in self.graph.edges(data=True):
-            matrix[u-1][v-1]=data["travel_time"]
-        #print(matrix)
-        end_time=time.time()
-        processing_time=end_time-start_time
-        print("processing_time = ",processing_time)
-        return matrix
-    def _create_drone_matrix(self,drone_speed):
-        """create the time travel matrix from the drone point of view"""
-        print("=================CREATE DRONE MATRIX================")
-        start_time=time.time()
-        #create matrix of dimension NxN with N the number of nodes in the graph
-        number_of_nodes=self.graph.number_of_nodes()
-        print('number_of_nodes = ',number_of_nodes)
-        matrix=[[None for i in range(1,number_of_nodes+1)] for j in range(1,number_of_nodes+1)]
-        print('len matrix = ',len(matrix))
-        #loop over nodes to calculate travel time between current node and others nodes
-        for current_node in self.graph.nodes:
-            for other_node in self.graph.nodes:
-                if current_node!=other_node:
-                    #get coordinates for both nodes
-                    current_node_coord=self.graph.nodes[current_node]['coordinates']
-                    current_node_coords_inversed=(current_node_coord[1],current_node_coord[0])
-                    other_node_coord=self.graph.nodes[other_node]['coordinates']
-                    other_node_coord_inversed=(other_node_coord[1],other_node_coord[0])
-                    #print("coord current = ",current_node_coord)
-                    #print("coord other = ",other_node_coord)
-                    #print("current_node = ",current_node)
-                    #print("other_node = ",other_node)
-                    #compute distance
-                    dist=geodesic(current_node_coords_inversed,other_node_coord_inversed).m
-                    #calculate travel time
-                    m_per_s_drone_speed=drone_speed/3.6
-                    travel_time=dist/m_per_s_drone_speed
-                    #print('dist calculate= ',dist)
-                    #line=self.edges.loc[(self.edges["src"]==current_node) & (self.edges["dest"]==other_node)]
-                    #if not line.empty:
-                        #print('line = ',line)
-                else:
-                    travel_time=0 #because current node over current node
-                matrix[current_node-1][other_node-1]=travel_time
-        end_time=time.time()
-        processing_time=end_time-start_time
-        print("processing_time = ",processing_time)
+            matrix[u - 1][v - 1] = data["travel_time"]
+        # print(matrix)
+        end_time = time.time()
+        processing_time = end_time - start_time
+        print("processing_time: ", processing_time)
         return matrix
 
+    def _create_drone_matrix(self, drone_speed):
+        """Create the time travel matrix from the drone point of view"""
+
+        print("================ CREATE DRONE MATRIX ================")
+        start_time = time.time()
+        # create matrix of dimension NxN with N the number of nodes in the graph
+        number_of_nodes = self.graph.number_of_nodes()
+        print("number_of_nodes: ", number_of_nodes)
+        matrix = [
+            [None for i in range(1, number_of_nodes + 1)]
+            for j in range(1, number_of_nodes + 1)
+        ]
+        print("len_matrix: ", len(matrix) ** 2)
+        # loop over nodes to calculate travel time between current node and others nodes
+        for current_node in self.graph.nodes:
+            for other_node in self.graph.nodes:
+                if current_node != other_node:
+                    # get coordinates for both nodes
+                    current_node_coord = self.graph.nodes[current_node]["coordinates"]
+                    current_node_coords_inversed = (
+                        current_node_coord[1],
+                        current_node_coord[0],
+                    )
+                    other_node_coord = self.graph.nodes[other_node]["coordinates"]
+                    other_node_coord_inversed = (
+                        other_node_coord[1],
+                        other_node_coord[0],
+                    )
+                    dist = geodesic(
+                        current_node_coords_inversed, other_node_coord_inversed
+                    ).m
+                    # calculate travel time
+                    m_per_s_drone_speed = drone_speed / 3.6
+                    travel_time = dist / m_per_s_drone_speed
+                else:
+                    travel_time = 0  # because current node over current node
+                matrix[current_node - 1][other_node - 1] = travel_time
+        end_time = time.time()
+        processing_time = end_time - start_time
+        print("processing_time: ", processing_time)
+        return matrix

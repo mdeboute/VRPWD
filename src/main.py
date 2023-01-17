@@ -3,21 +3,17 @@ from Data import Data
 
 
 def print_usage():
-    print("Usage: python3 main.py <map_file_path> <demands_file_path>")
+    print("Usage: python3 main.py <instance_directory>")
+    print("Example: python3 main.py data/instance_1/")
 
 
 def main():
-    if len(sys.argv) != 3 or sys.argv[1] == "-h" or sys.argv[1] == "--help":
+    if len(sys.argv) != 2 or sys.argv[1] == "-h" or sys.argv[1] == "--help":
         print_usage()
         sys.exit(1)
 
-    map_file = sys.argv[1]
-    demands_file = sys.argv[2]
-
-    data = Data(map_file, demands_file)
-    #data.plot_graph()
-    #data.plot_nodes_html()
-    print(data.drone_matrix[0])
+    instance_dir = sys.argv[1]
+    data = Data(instance_dir)
 
 
 if __name__ == "__main__":

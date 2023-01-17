@@ -5,4 +5,4 @@ class Node(object):
         assert isinstance(lon, float), "ERROR: demand must be an int!"
         self.lat = lat
         self.lon = lon
-        self.demand=demand
+        self.demand = demand
