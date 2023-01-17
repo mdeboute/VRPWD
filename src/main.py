@@ -15,8 +15,9 @@ def main():
     demands_file = sys.argv[2]
 
     data = Data(map_file, demands_file)
-    data.plot_graph()
-    data.plot_nodes_html()
+    #data.plot_graph()
+    #data.plot_nodes_html()
+    print(data.drone_matrix[0])
 
 
 if __name__ == "__main__":

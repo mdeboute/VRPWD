@@ -18,6 +18,8 @@ class Data(object):
         self.nodes = self._create_nodes_and_edges_df()[0]
         self.edges = self._create_nodes_and_edges_df()[1]
         self.graph = self._create_graph()
+        self.road_matrix = self._create_road_matrix()
+        self.drone_matrix = self._create_drone_matrix(50)
         #self.projected_graph = self._create_projected_graph(4326, 3857)
 
     def _create_nodes_and_edges_df(self):
@@ -46,7 +48,7 @@ class Data(object):
                 speed = 60
             if osm_type == "secondary":
                 speed = 45
-            else:
+            if osm_type == "tertiary":
                 speed = 30
             m_per_s_speed=round(speed/3.6,2)
             travel_time=length/m_per_s_speed
@@ -153,6 +155,62 @@ class Data(object):
                 folium.Marker(coord,icon=folium.Icon(color='red')).add_to(m)
             else:
                 folium.Marker(coord,icon=folium.Icon(color='blue')).add_to(m)
-        
         # Show map
         m.save("assets/map.html")
+
+    def _create_road_matrix(self):
+        """create the time travel matrix from the road point of view"""
+        print("==================CREATE ROAD MATRIX=====================")
+        start_time=time.time()
+        #create matrix of dimension NxN with N the number of nodes in the graph
+        number_of_nodes=self.graph.number_of_nodes()
+        print('number_of_nodes = ',number_of_nodes)
+        matrix=[[None for i in range(1,number_of_nodes+1)] for j in range(1,number_of_nodes+1)]
+        print('len matrix = ',len(matrix))
+        #loop over edges to get travel time
+        for u, v, data in self.graph.edges(data=True):
+            matrix[u-1][v-1]=data["travel_time"]
+        #print(matrix)
+        end_time=time.time()
+        processing_time=end_time-start_time
+        print("processing_time = ",processing_time)
+        return matrix
+    def _create_drone_matrix(self,drone_speed):
+        """create the time travel matrix from the drone point of view"""
+        print("=================CREATE DRONE MATRIX================")
+        start_time=time.time()
+        #create matrix of dimension NxN with N the number of nodes in the graph
+        number_of_nodes=self.graph.number_of_nodes()
+        print('number_of_nodes = ',number_of_nodes)
+        matrix=[[None for i in range(1,number_of_nodes+1)] for j in range(1,number_of_nodes+1)]
+        print('len matrix = ',len(matrix))
+        #loop over nodes to calculate travel time between current node and others nodes
+        for current_node in self.graph.nodes:
+            for other_node in self.graph.nodes:
+                if current_node!=other_node:
+                    #get coordinates for both nodes
+                    current_node_coord=self.graph.nodes[current_node]['coordinates']
+                    current_node_coords_inversed=(current_node_coord[1],current_node_coord[0])
+                    other_node_coord=self.graph.nodes[other_node]['coordinates']
+                    other_node_coord_inversed=(other_node_coord[1],other_node_coord[0])
+                    #print("coord current = ",current_node_coord)
+                    #print("coord other = ",other_node_coord)
+                    #print("current_node = ",current_node)
+                    #print("other_node = ",other_node)
+                    #compute distance
+                    dist=geodesic(current_node_coords_inversed,other_node_coord_inversed).m
+                    #calculate travel time
+                    m_per_s_drone_speed=drone_speed/3.6
+                    travel_time=dist/m_per_s_drone_speed
+                    #print('dist calculate= ',dist)
+                    #line=self.edges.loc[(self.edges["src"]==current_node) & (self.edges["dest"]==other_node)]
+                    #if not line.empty:
+                        #print('line = ',line)
+                else:
+                    travel_time=0 #because current node over current node
+                matrix[current_node-1][other_node-1]=travel_time
+        end_time=time.time()
+        processing_time=end_time-start_time
+        print("processing_time = ",processing_time)
+        return matrix
+
