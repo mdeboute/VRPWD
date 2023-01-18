@@ -1,6 +1,7 @@
 import pandas as pd
 import geopandas as gpd
 import random
+import numpy as np
 import matplotlib.pyplot as plt
 from geopy.distance import geodesic
 import time
@@ -153,7 +154,8 @@ class Data(object):
         demand_nodes.append(depot)
         print("demand_nodes and depot = ",demand_nodes)
         #create empty matrix 
-        matrix=[[None for i in range(1,len(demand_nodes)+1)] for j in range(1,len(demand_nodes)+1)]
+        matrix=np.empty(shape=(len(demand_nodes),len(demand_nodes)),dtype=float)
+        print('matrix shape = ',matrix.shape)
         #compute shortest path in term of travel time
         for current_node in demand_nodes:
             for other_node in demand_nodes:
@@ -175,11 +177,8 @@ class Data(object):
         # create matrix of dimension NxN with N the number of nodes in the graph
         number_of_nodes = self.graph.number_of_nodes()
         print("number_of_nodes: ", number_of_nodes)
-        matrix = [
-            [None for i in range(1, number_of_nodes + 1)]
-            for j in range(1, number_of_nodes + 1)
-        ]
-        print("len_matrix: ", len(matrix) ** 2)
+        matrix=np.empty(shape=(number_of_nodes,number_of_nodes),dtype=float)
+        print('matrix shape = ',matrix.shape)
         # loop over nodes to calculate travel time between current node and others nodes
         for current_node in self.graph.nodes:
             for other_node in self.graph.nodes:
