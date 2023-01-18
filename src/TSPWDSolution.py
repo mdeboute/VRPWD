@@ -10,12 +10,12 @@ class TSPWDSolution:
         instance: TSPWDData,
         algorithm: str,
         objective_value: int,
-        decision_variables,  # TODO: Define the type of decision_variables
+        solution,  # TODO: Define the type of decision_variables
     ):
         self.instance = instance
         self.algorithm = algorithm
         self.objective_value = objective_value
-        self.decision_variables = decision_variables
+        self.solution = solution
         self.__SOLUTION_DIR = str(self.__BASE_DIR) + "/solution/" + self.algorithm
 
     def __str__(self):
@@ -23,6 +23,13 @@ class TSPWDSolution:
 
     def __repr__(self):
         return self.__str__()
+
+    def print_tour(self):
+        # print the tour
+        print(f"Tour (cost={self.objective_value}): ", end="")
+        for i in self.solution:
+            print(i, end=" ")
+        print()
 
     def check(self):
         # TODO: Check if the solution is feasible

@@ -1,5 +1,6 @@
 import sys
 from TSPWDData import TSPWDData
+from TSPGreedy import TSPGreedy
 
 
 def print_usage():
@@ -14,7 +15,8 @@ def main():
 
     instance_dir = sys.argv[1]
     data = TSPWDData(instance_dir)
-    data.save_map_html()
+    sol = TSPGreedy(data).solve()
+    sol.print_tour()
 
 
 if __name__ == "__main__":
