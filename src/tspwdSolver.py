@@ -1,5 +1,5 @@
 import sys
-from Data import Data
+from TSPWDData import TSPWDData
 
 
 def print_usage():
@@ -13,7 +13,7 @@ def main():
         sys.exit(1)
 
     instance_dir = sys.argv[1]
-    data = Data(instance_dir)
+    data = TSPWDData(instance_dir)
 
 
 if __name__ == "__main__":

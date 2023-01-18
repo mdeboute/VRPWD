@@ -1,10 +1,12 @@
-# TSP-D
+# TSPWD
+
+[Here](./projet.pdf) is the french subject of the La Poste TSP With Drones project.
 
 Don't forget to do a `pip install -r requirements.txt` before running the code.
 
 For the main program:
 
-Type `python3 src/main.py -h` for help.
+Type `python3 src/tspwdSolver.py -h` for help.
 
 ## Social Networks
 

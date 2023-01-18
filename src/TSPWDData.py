@@ -10,7 +10,7 @@ import folium
 from pathlib import Path
 
 
-class Data(object):
+class TSPWDData(object):
     """This class is used to store the instance information"""
 
     def __init__(self, instance_dir):
@@ -24,6 +24,7 @@ class Data(object):
         self.drone_matrix = self._create_drone_matrix(drone_speed=50)
 
     def _create_nodes_and_edges_df(self):
+        # TODO: refactor this method to store objects of type Node and Edge
         start_time = time.time()
         print("=================== NODES AND EDGES CREATION ===================")
         list_coords = []
@@ -133,40 +134,45 @@ class Data(object):
         return graph
 
     def _create_time_matrix(self):
-        """create the D+1xD+1 travel time matrix from the road point of view
+        """Create the D+1xD+1 travel time matrix from the road point of view
         with D the number of demand nodes +1 for the depot.
-        By default, the depot is at the end of the list 'demand_nodes' """
-        print("==================CREATE TIME MATRIX=====================")
-        start_time=time.time()
-        demand_nodes=[]
-        depot=None
-        #get demand nodes
+        By default, the depot is at the end of the list 'demand_nodes'"""
+
+        print("===================== CREATE TIME MATRIX =====================")
+        start_time = time.time()
+        demand_nodes = []
+        depot = None
+        # get demand nodes
         for node in self.graph.nodes():
-            if self.graph.nodes[node]['demand']>0:
+            if self.graph.nodes[node]["demand"] > 0:
                 print()
                 demand_nodes.append(node)
-        print('demand_nodes = ',demand_nodes)
-        #select a random nodes different from those with demand>0
+        print("demand_nodes = ", demand_nodes)
+        # select a random nodes different from those with demand>0
         while (depot == None) or (depot in demand_nodes):
-            depot=random.randint(1,self.graph.number_of_nodes())
-        print('depot = ',depot)
-        #add depot to the list of demand_nodes in order to calculate travel_time between demand nodes and depot
+            depot = random.randint(1, self.graph.number_of_nodes())
+        print("depot = ", depot)
+        # add depot to the list of demand_nodes in order to calculate travel_time between demand nodes and depot
         demand_nodes.append(depot)
-        print("demand_nodes and depot = ",demand_nodes)
-        #create empty matrix 
-        matrix=np.empty(shape=(len(demand_nodes),len(demand_nodes)),dtype=float)
-        print('matrix shape = ',matrix.shape)
-        #compute shortest path in term of travel time
+        print("demand_nodes and depot = ", demand_nodes)
+        # create empty matrix
+        matrix = np.empty(shape=(len(demand_nodes), len(demand_nodes)), dtype=float)
+        print("matrix shape = ", matrix.shape)
+        # compute shortest path in term of travel time
         for current_node in demand_nodes:
             for other_node in demand_nodes:
                 if current_node != other_node:
-                    travel_time = nx.dijkstra_path_length(self.graph, current_node, other_node, weight='travel_time')
+                    travel_time = nx.dijkstra_path_length(
+                        self.graph, current_node, other_node, weight="travel_time"
+                    )
                 else:
-                    travel_time=0
-                matrix[demand_nodes.index(current_node)][demand_nodes.index(other_node)]=travel_time
-        end_time=time.time()
-        processing_time=end_time-start_time
-        print("processing_time = ",processing_time)
+                    travel_time = 0
+                matrix[demand_nodes.index(current_node)][
+                    demand_nodes.index(other_node)
+                ] = travel_time
+        end_time = time.time()
+        processing_time = end_time - start_time
+        print("processing_time = ", processing_time)
         return matrix
 
     def _create_drone_matrix(self, drone_speed):
@@ -177,8 +183,8 @@ class Data(object):
         # create matrix of dimension NxN with N the number of nodes in the graph
         number_of_nodes = self.graph.number_of_nodes()
         print("number_of_nodes: ", number_of_nodes)
-        matrix=np.empty(shape=(number_of_nodes,number_of_nodes),dtype=float)
-        print('matrix shape = ',matrix.shape)
+        matrix = np.empty(shape=(number_of_nodes, number_of_nodes), dtype=float)
+        print("matrix shape = ", matrix.shape)
         # loop over nodes to calculate travel time between current node and others nodes
         for current_node in self.graph.nodes:
             for other_node in self.graph.nodes:
@@ -209,7 +215,8 @@ class Data(object):
         return matrix
 
     def plot_graph(self):
-        """plot the graph"""
+        """Plot the graph"""
+
         print("==================== PLOT GRAPH ====================")
         # Draw graph
         coordinates = nx.get_node_attributes(self.graph, "coordinates")
@@ -227,8 +234,8 @@ class Data(object):
         print("number_of_demand_nodes: ", count)
         plt.show()
 
-    def plot_nodes_html(self):
-        """plot the nodes on a interactive html map"""
+    def save_map_html(self):
+        """Save the nodes on a interactive html map"""
         list_coords = []
         # Create map
         m = folium.Map(location=[44.838633, 0.540983], zoom_start=13)
@@ -240,7 +247,5 @@ class Data(object):
                 folium.Marker(coord, icon=folium.Icon(color="red")).add_to(m)
             else:
                 folium.Marker(coord, icon=folium.Icon(color="blue")).add_to(m)
-        # Show map
+        # save map
         m.save("assets/map.html")
-
-
