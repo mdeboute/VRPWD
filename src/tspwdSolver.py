@@ -14,6 +14,7 @@ def main():
 
     instance_dir = sys.argv[1]
     data = TSPWDData(instance_dir)
+    data.save_map_html()
 
 
 if __name__ == "__main__":

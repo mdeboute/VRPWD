@@ -88,7 +88,7 @@ class TSPWDData(object):
         gdf_nodes.index = range(1, len(gdf_nodes) + 1)
         end_time = time.time()
         processing_time = end_time - start_time
-        print("processing_time: ", processing_time)
+        print("processing_time = ", processing_time)
         return gdf_nodes, gdf_edges
 
     def _create_graph(self):
@@ -130,7 +130,7 @@ class TSPWDData(object):
             self.nodes.loc[nearest_node, "demand"] = demand
         end_time = time.time()
         processing_time = end_time - start_time
-        print("processing_time: ", processing_time)
+        print("processing_time = ", processing_time)
         return graph
 
     def _create_time_matrix(self):
@@ -145,9 +145,8 @@ class TSPWDData(object):
         # get demand nodes
         for node in self.graph.nodes():
             if self.graph.nodes[node]["demand"] > 0:
-                print()
                 demand_nodes.append(node)
-        print("demand_nodes = ", demand_nodes)
+        print("demand_nodes: ", demand_nodes)
         # select a random nodes different from those with demand>0
         while (depot == None) or (depot in demand_nodes):
             depot = random.randint(1, self.graph.number_of_nodes())
@@ -182,7 +181,7 @@ class TSPWDData(object):
         start_time = time.time()
         # create matrix of dimension NxN with N the number of nodes in the graph
         number_of_nodes = self.graph.number_of_nodes()
-        print("number_of_nodes: ", number_of_nodes)
+        print("number_of_nodes = ", number_of_nodes)
         matrix = np.empty(shape=(number_of_nodes, number_of_nodes), dtype=float)
         print("matrix shape = ", matrix.shape)
         # loop over nodes to calculate travel time between current node and others nodes
@@ -211,7 +210,7 @@ class TSPWDData(object):
                 matrix[current_node - 1][other_node - 1] = travel_time
         end_time = time.time()
         processing_time = end_time - start_time
-        print("processing_time: ", processing_time)
+        print("processing_time = ", processing_time)
         return matrix
 
     def plot_graph(self):
@@ -231,7 +230,7 @@ class TSPWDData(object):
                 node_colors.append("b")
         nx.draw(self.graph, coordinates, node_color=node_colors, with_labels=True)
         # Show plot
-        print("number_of_demand_nodes: ", count)
+        print("number_of_demand_nodes = ", count)
         plt.show()
 
     def save_map_html(self):
