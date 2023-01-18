@@ -3,8 +3,8 @@ from TSPWDData import TSPWDData
 
 
 def print_usage():
-    print("Usage: python3 main.py <instance_directory>")
-    print("Example: python3 main.py data/instance_1/")
+    print("Usage: python3 tspwdSolver.py <instance_directory>")
+    print("Example: python3 tspwdSolver.py data/instance_1/")
 
 
 def main():
