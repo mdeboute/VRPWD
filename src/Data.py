@@ -8,6 +8,8 @@ import time
 import networkx as nx
 import folium
 from pathlib import Path
+from Node import Node
+from Edge import Edge
 
 
 class Data(object):
@@ -20,12 +22,14 @@ class Data(object):
         self._brut_df_demands = pd.read_json(self.__DEMANDS_PATH)
         self.nodes, self.edges = self._create_nodes_and_edges_df()
         self.graph = self._create_graph()
-        self.time_matrix = self._create_time_matrix()
+        self.df_node_objects=self._create_df_node_objects()
+        self.df_edge_objects=self._create_df_edge_objects()
+        self.time_matrix= self._create_time_matrix()
         self.drone_matrix = self._create_drone_matrix(drone_speed=50)
 
     def _create_nodes_and_edges_df(self):
         start_time = time.time()
-        print("=================== NODES AND EDGES CREATION ===================")
+        print("===================BRUT NODES AND EDGES CREATION ===================")
         list_coords = []
         rows_gdf_nodes = []
         cols_gdf_nodes = ["lat", "lon", "demand"]
@@ -106,8 +110,12 @@ class Data(object):
         for idx, row in self.edges.iterrows():
             src = row["src"]
             dest = row["dest"]
+            length=row['length']
+            speed=row['speed']
+            osm_type=row['osm_type']
+            osm_id=row['osm_id']
             travel_time = row["travel_time"]
-            graph.add_edge(src, dest, id=idx, travel_time=travel_time)
+            graph.add_edge(src, dest, id=idx, length=length, osm_type=osm_type,speed=speed,osm_id=osm_id,travel_time=travel_time)
         # add demand
         for _, row in self._brut_df_demands.iterrows():
             point = (row["lat"], row["lon"])
@@ -131,19 +139,62 @@ class Data(object):
         processing_time = end_time - start_time
         print("processing_time: ", processing_time)
         return graph
+    
+    def _create_df_node_objects(self):
+        """create a df with 1 column 'Node Object' with all nodes"""
+        print('===========DF NODE OBJECTS CREATION==============')
+        start_time=time.time()
+        rows_df_nodes = []
+        cols_df_nodes = ["Node Object"]
+        for idx,row in self.nodes.iterrows():
+            node=Node(idx,row['lat'],row['lon'],row['demand'])
+            rows_df_nodes.append({'Node Object':node})
+        df_nodes_object = pd.DataFrame(rows_df_nodes, columns=cols_df_nodes,index=range(1,len(self.nodes)+1))
+        end_time=time.time()
+        processing_time=end_time-start_time
+        print("processing time = ",processing_time)
+        return df_nodes_object
+
+    def _create_df_edge_objects(self):
+        """create a df with 1 column 'Edge Object' with all edges"""
+        print('===========DF EDGE OBJECTS CREATION==============')
+        start_time=time.time()
+        rows_df_edges = []
+        cols_df_edges = ["Edge Object"]
+        print('nb edges in df brut: ',len(self.edges))
+        print('nb edges in graphe : ',self.graph.number_of_edges())
+        i=1
+        for e in self.graph.edges():
+            edge=Edge(
+                i,
+                e[0],
+                e[1],
+                self.graph.edges[e]['length'],
+                self.graph.edges[e]['speed'],
+                self.graph.edges[e]['osm_id'],
+                self.graph.edges[e]['osm_type'],
+                self.graph.edges[e]['travel_time']
+                )
+            rows_df_edges.append({'Edge Object':edge})
+        df_edge_objects = pd.DataFrame(rows_df_edges, columns=cols_df_edges,index=range(1,self.graph.number_of_edges()+1))
+        end_time=time.time()
+        processing_time=end_time-start_time
+        print(df_edge_objects)
+        print("processing time = ",processing_time)
+        return df_edge_objects
 
     def _create_time_matrix(self):
         """create the D+1xD+1 travel time matrix from the road point of view
-        with D the number of demand nodes +1 for the depot.
+        with D the number of demand nodes, +1 for the depot.
         By default, the depot is at the end of the list 'demand_nodes' """
-        print("==================CREATE TIME MATRIX=====================")
+        print("==================CREATE TIME MATRIX =====================")
         start_time=time.time()
+        round_number=3
         demand_nodes=[]
         depot=None
         #get demand nodes
         for node in self.graph.nodes():
             if self.graph.nodes[node]['demand']>0:
-                print()
                 demand_nodes.append(node)
         print('demand_nodes = ',demand_nodes)
         #select a random nodes different from those with demand>0
@@ -154,16 +205,15 @@ class Data(object):
         demand_nodes.append(depot)
         print("demand_nodes and depot = ",demand_nodes)
         #create empty matrix 
-        matrix=np.empty(shape=(len(demand_nodes),len(demand_nodes)),dtype=float)
+        matrix=np.zeros(shape=(len(demand_nodes),len(demand_nodes)),dtype=float)
         print('matrix shape = ',matrix.shape)
         #compute shortest path in term of travel time
         for current_node in demand_nodes:
             for other_node in demand_nodes:
                 if current_node != other_node:
-                    travel_time = nx.dijkstra_path_length(self.graph, current_node, other_node, weight='travel_time')
-                else:
-                    travel_time=0
-                matrix[demand_nodes.index(current_node)][demand_nodes.index(other_node)]=travel_time
+                    travel_time = round(nx.dijkstra_path_length(self.graph, current_node, other_node, weight='travel_time'),round_number)
+                    matrix[demand_nodes.index(current_node)][demand_nodes.index(other_node)]=travel_time
+                    matrix[demand_nodes.index(other_node)][demand_nodes.index(current_node)]=travel_time
         end_time=time.time()
         processing_time=end_time-start_time
         print("processing_time = ",processing_time)
@@ -174,35 +224,36 @@ class Data(object):
 
         print("================ CREATE DRONE MATRIX ================")
         start_time = time.time()
+        round_number=3
         # create matrix of dimension NxN with N the number of nodes in the graph
         number_of_nodes = self.graph.number_of_nodes()
         print("number_of_nodes: ", number_of_nodes)
-        matrix=np.empty(shape=(number_of_nodes,number_of_nodes),dtype=float)
+        matrix=np.zeros(shape=(number_of_nodes,number_of_nodes),dtype=float)
         print('matrix shape = ',matrix.shape)
         # loop over nodes to calculate travel time between current node and others nodes
         for current_node in self.graph.nodes:
             for other_node in self.graph.nodes:
                 if current_node != other_node:
-                    # get coordinates for both nodes
-                    current_node_coord = self.graph.nodes[current_node]["coordinates"]
-                    current_node_coords_inversed = (
-                        current_node_coord[1],
-                        current_node_coord[0],
-                    )
-                    other_node_coord = self.graph.nodes[other_node]["coordinates"]
-                    other_node_coord_inversed = (
-                        other_node_coord[1],
-                        other_node_coord[0],
-                    )
-                    dist = geodesic(
-                        current_node_coords_inversed, other_node_coord_inversed
-                    ).m
-                    # calculate travel time
-                    m_per_s_drone_speed = drone_speed / 3.6
-                    travel_time = dist / m_per_s_drone_speed
-                else:
-                    travel_time = 0  # because current node over current node
-                matrix[current_node - 1][other_node - 1] = travel_time
+                    if matrix[current_node - 1][other_node - 1]==0:
+                        # get coordinates for both nodes
+                        current_node_coord = self.graph.nodes[current_node]["coordinates"]
+                        current_node_coords_inversed = (
+                            current_node_coord[1],
+                            current_node_coord[0],
+                        )
+                        other_node_coord = self.graph.nodes[other_node]["coordinates"]
+                        other_node_coord_inversed = (
+                            other_node_coord[1],
+                            other_node_coord[0],
+                        )
+                        dist = geodesic(
+                            current_node_coords_inversed, other_node_coord_inversed
+                        ).m
+                        # calculate travel time
+                        m_per_s_drone_speed = drone_speed / 3.6
+                        travel_time = round(dist / m_per_s_drone_speed,round_number)
+                        matrix[current_node - 1][other_node - 1] = travel_time
+                        matrix[other_node - 1][current_node - 1] = travel_time
         end_time = time.time()
         processing_time = end_time - start_time
         print("processing_time: ", processing_time)
