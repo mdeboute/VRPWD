@@ -277,7 +277,7 @@ class TSPWDData(object):
         print("number_of_demand_nodes = ", count)
         plt.show()
 
-    def plot_nodes_html(self):
+    def save_map_html(self):
         """plot the nodes on a interactive html map"""
         list_coords = []
         # Create map
