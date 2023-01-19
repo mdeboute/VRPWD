@@ -4,6 +4,8 @@
 
 Don't forget to do a `pip install -r requirements.txt` before running the code.
 
+If you install a new package, don't forget to add it to the `requirements.txt` file with `pip freeze > requirements.txt`.
+
 For the main program:
 
 Type `python3 src/tspwdSolver.py -h` for help.
