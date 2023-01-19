@@ -96,6 +96,7 @@ class TSPMIPModel:
                 self.__algorithm,
                 int(self.model.ObjVal),
                 solution,
+                self.instance._VERBOSE
             )
         elif self.model.Status == GRB.FEASIBLE:
             print(
@@ -105,7 +106,8 @@ class TSPMIPModel:
                 self.instance,
                 self.__algorithm,
                 int(self.model.ObjVal),
-                solution
+                solution,
+                self.instance._VERBOSE
             )
         else:
             print(f"No solution found in {time_limit} seconds!")

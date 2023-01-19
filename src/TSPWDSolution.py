@@ -25,7 +25,8 @@ class TSPWDSolution:
         self.algorithm = algorithm
         self.objective_value = objective_value
         self.solution = solution
-        self.graph = self._create_graph()
+        self.graph=self._create_graph()
+        self._create_tour()
 
         self.__SOLUTION_DIR = str(self.__BASE_DIR) + "/solution/" + self.algorithm
 
@@ -43,13 +44,14 @@ class TSPWDSolution:
         print()
 
     def _create_graph(self):
-        """Create a graph version of the solution with the nodes from the initial graph"""
+        """Create the final solution graph version"""
 
-        vprint("=========== GRAPH SOL CREATION ===========")
+        vprint("=========== GRAPH FINAL SOLUTION CREATION ===========")
         start_time = time.time()
         # check for the type of vehicle which use the arc in order to use one color for truck and one color for drone
         vprint("algo = ", self.algorithm)
         vprint("solution = ", self.solution)
+        tour=[]
         if self.instance._CASE < 1:
             _vehicle = "truck"
             _truck_solution = self.solution
@@ -76,9 +78,11 @@ class TSPWDSolution:
         vprint("depot = ", self.instance.depot)
         for i, x in enumerate(_truck_solution[:-1]):
             y = _truck_solution[i + 1]
+            vprint('demand nodes = ',x , y)
             pcc = nx.shortest_path(
                 self.instance.graph, x, y, weight="travel_time", method="dijkstra"
             )
+            vprint("pcc = ",pcc)
             # loop 2 to 2 over pcc
             for i2, x2 in enumerate(pcc[:-1]):
                 y2 = pcc[i2 + 1]
@@ -86,6 +90,7 @@ class TSPWDSolution:
                 if not graph.has_node(y2):
                     # get y2 instance.graph coordinates
                     y2_coord = self.instance.graph.nodes[y2]["coordinates"]
+                    vprint('intermediate nodes  = ',y2)
                     graph.add_node(y2, coordinates=y2_coord, depot=False, demand=0)
                 graph.add_edge(x2, y2, vehicle="truck")
         end_time = time.time()
@@ -93,6 +98,32 @@ class TSPWDSolution:
         vprint("processing_time = ", processing_time)
         return graph
 
+    def _create_tour(self):
+        """ create the final solution (= 1 tour) list version"""
+        print("==========CREATE FINAL LIST SOLUTION==========")
+        if self.instance._CASE < 1:
+            _vehicle = "truck"
+            _truck_solution = self.solution
+        else:
+            # modified incoming solution to adjusted edges attributes for drone
+            _vehicle = None
+            _truck_solution = None
+            _drone_solution = None
+        tour=[]
+        for i, x in enumerate(_truck_solution[:-1]):
+            y = _truck_solution[i + 1]
+            vprint('demand nodes = ',x , y)
+            pcc = nx.shortest_path(
+                self.instance.graph, x, y, weight="travel_time", method="dijkstra"
+            )
+        #create final solution
+            if len(tour)==0:
+                tour=pcc
+            else:
+                pcc.pop(0)
+                tour=tour+pcc
+        self.solution=tour
+    
     def plot(self):
         """Plot the graph"""
 
