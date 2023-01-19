@@ -15,21 +15,37 @@ from Edge import Edge
 class TSPWDData(object):
     """This class is used to store the instance information"""
 
-    def __init__(self, instance_dir):
+    def __init__(self, instance_dir, case, verbose):
         self.__MAP_PATH = Path(instance_dir).joinpath("map.json")
         self.__DEMANDS_PATH = Path(instance_dir).joinpath("demands.json")
+        self.__CASE = case
+        self.__VERBOSE = verbose
+
+        if self.__VERBOSE:
+
+            def _vprint(*args, **kwargs):
+                print(*args, **kwargs)
+
+        else:
+            _vprint = lambda *_, **__: None  # do-nothing function
+
+        global vprint
+        vprint = _vprint
+
         self._brut_df_map = pd.read_json(self.__MAP_PATH)
         self._brut_df_demands = pd.read_json(self.__DEMANDS_PATH)
+
         self.nodes, self.edges = self._create_nodes_and_edges_df()
         self.graph = self._create_graph()
         self.df_node_objects = self._create_df_node_objects()
         self.df_edge_objects = self._create_df_edge_objects()
         self.time_matrix = self._create_time_matrix()
-        self.drone_matrix = self._create_drone_matrix(drone_speed=50)
+        if self.__CASE > 0:
+            self.drone_matrix = self._create_drone_matrix(drone_speed=50)
 
     def _create_nodes_and_edges_df(self):
         start_time = time.time()
-        print("=================== BRUT NODES AND EDGES CREATION ===================")
+        vprint("=================== BRUT NODES AND EDGES CREATION ===================")
         list_coords = []
         rows_gdf_nodes = []
         cols_gdf_nodes = ["lat", "lon", "demand"]
@@ -91,11 +107,11 @@ class TSPWDData(object):
         gdf_nodes.index = range(1, len(gdf_nodes) + 1)
         end_time = time.time()
         processing_time = end_time - start_time
-        print("processing_time = ", processing_time)
+        vprint("processing_time = ", processing_time)
         return gdf_nodes, gdf_edges
 
     def _create_graph(self):
-        print("==================== GRAPH CREATION ====================")
+        vprint("==================== GRAPH CREATION ====================")
         start_time = time.time()
         # create empty undirected graph
         graph = nx.Graph()
@@ -146,12 +162,12 @@ class TSPWDData(object):
             self.nodes.loc[nearest_node, "demand"] = demand
         end_time = time.time()
         processing_time = end_time - start_time
-        print("processing_time = ", processing_time)
+        vprint("processing_time = ", processing_time)
         return graph
 
     def _create_df_node_objects(self):
         """create a df with 1 column 'Node Object' with all nodes"""
-        print("=========== DF NODE OBJECTS CREATION ===========")
+        vprint("=========== DF NODE OBJECTS CREATION ===========")
         start_time = time.time()
         rows_df_nodes = []
         cols_df_nodes = ["Node Object"]
@@ -163,17 +179,17 @@ class TSPWDData(object):
         )
         end_time = time.time()
         processing_time = end_time - start_time
-        print("processing time = ", processing_time)
+        vprint("processing_time = ", processing_time)
         return df_nodes_object
 
     def _create_df_edge_objects(self):
         """create a df with 1 column 'Edge Object' with all edges"""
-        print("=========== DF EDGE OBJECTS CREATION ===========")
+        vprint("=========== DF EDGE OBJECTS CREATION ===========")
         start_time = time.time()
         rows_df_edges = []
         cols_df_edges = ["Edge Object"]
-        print("nb edges in df brut: ", len(self.edges))
-        print("nb edges in graphe : ", self.graph.number_of_edges())
+        vprint("nb_edges_in_brut_df = ", len(self.edges))
+        vprint("nb_edges_in_graph = ", self.graph.number_of_edges())
         i = 1
         for e in self.graph.edges():
             edge = Edge(
@@ -194,8 +210,7 @@ class TSPWDData(object):
         )
         end_time = time.time()
         processing_time = end_time - start_time
-        print(df_edge_objects)
-        print("processing time = ", processing_time)
+        vprint("processing_time = ", processing_time)
         return df_edge_objects
 
     def _create_time_matrix(self):
@@ -203,7 +218,7 @@ class TSPWDData(object):
         with D the number of demand nodes, +1 for the depot.
         By default, the depot is the first node of the list 'demand_nodes'"""
 
-        print("================== CREATE TIME MATRIX ==================")
+        vprint("================== CREATE TIME MATRIX ==================")
         start_time = time.time()
         round_precision = 3
         demands_nodes = []
@@ -212,19 +227,20 @@ class TSPWDData(object):
         for node in self.graph.nodes():
             if self.graph.nodes[node]["demand"] > 0:
                 demands_nodes.append(node)
-        print("demand_nodes = ", demands_nodes)
+        vprint("demand_nodes = ", demands_nodes)
         # select a random nodes different from those with demand>0
         while (depot == None) or (depot in demands_nodes):
             depot = random.randint(1, self.graph.number_of_nodes())
-        print("depot = ", depot)
+        vprint("depot = ", depot)
         # add depot to the list of demand_nodes in order to calculate travel_time between demand nodes and depot
         # add it at the beginning of the list
         demands_nodes.insert(0, depot)
-        print("demand_nodes and depot = ", demands_nodes)
+
+        vprint("demand_nodes_and_depot = ", demands_nodes)
         self.demands_nodes = demands_nodes
         # create empty matrix
         matrix = np.zeros(shape=(len(demands_nodes), len(demands_nodes)), dtype=float)
-        print("matrix shape = ", matrix.shape)
+        vprint("matrix_shape = ", matrix.shape)
         # compute shortest path in term of travel time
         for current_node in demands_nodes:
             for other_node in demands_nodes:
@@ -241,25 +257,24 @@ class TSPWDData(object):
                     matrix[demands_nodes.index(other_node)][
                         demands_nodes.index(current_node)
                     ] = travel_time
-        for i in range(len(matrix)) :
+        for i in range(len(matrix)):
             matrix[i][i] = 10000
         end_time = time.time()
         processing_time = end_time - start_time
-        print("processing_time = ", processing_time)
-        print("matrix= ", matrix)
+        vprint("processing_time = ", processing_time)
         return matrix
 
     def _create_drone_matrix(self, drone_speed):
         """Create the time travel matrix from the drone point of view"""
 
-        print("================ CREATE DRONE MATRIX ================")
+        vprint("================ CREATE DRONE MATRIX ================")
         start_time = time.time()
         round_number = 3
         # create matrix of dimension NxN with N the number of nodes in the graph
         number_of_nodes = self.graph.number_of_nodes()
-        print("number_of_nodes = ", number_of_nodes)
+        vprint("number_of_nodes = ", number_of_nodes)
         matrix = np.zeros(shape=(number_of_nodes, number_of_nodes), dtype=float)
-        print("matrix shape = ", matrix.shape)
+        vprint("matrix shape = ", matrix.shape)
         # loop over nodes to calculate travel time between current node and others nodes
         for current_node in self.graph.nodes:
             for other_node in self.graph.nodes:
@@ -288,12 +303,12 @@ class TSPWDData(object):
                         matrix[other_node - 1][current_node - 1] = travel_time
         end_time = time.time()
         processing_time = end_time - start_time
-        print("processing_time: ", processing_time)
+        vprint("processing_time = ", processing_time)
         return matrix
 
     def plot_graph(self):
         """plot the graph"""
-        print("==================== PLOT GRAPH ====================")
+        vprint("==================== PLOT GRAPH ====================")
         # Draw graph
         coordinates = nx.get_node_attributes(self.graph, "coordinates")
         node_colors = []
@@ -306,7 +321,7 @@ class TSPWDData(object):
                 node_colors.append("b")
         nx.draw(self.graph, coordinates, node_color=node_colors, with_labels=True)
         # Show plot
-        print("number_of_demand_nodes = ", count)
+        vprint("number_of_demand_nodes = ", count)
         plt.show()
 
     def save_map_html(self):
