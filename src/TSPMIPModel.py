@@ -91,7 +91,7 @@ class TSPMIPModel:
             print(
                 f"Optimal Result: runtime={_runtime:.2f}sec; objective={int(self.model.ObjVal)}; gap={self.model.MIPGap:.4f}%"
             )
-            return  TSPWDSolution(
+            return TSPWDSolution(
                 self.instance,
                 self.__algorithm,
                 int(self.model.ObjVal),
@@ -101,7 +101,7 @@ class TSPMIPModel:
             print(
                 f"Result: runtime={_runtime:.2f}sec; objective={int(self.model.ObjVal)}; gap={100*self.model.MIPGap:.4f}%"
             )
-            return  TSPWDSolution(
+            return TSPWDSolution(
                 self.instance,
                 self.__algorithm,
                 int(self.model.ObjVal),
