@@ -217,11 +217,12 @@ class TSPWDData(object):
         while (depot == None) or (depot in demands_nodes):
             depot = random.randint(1, self.graph.number_of_nodes())
         print("depot = ", depot)
+        self.depot=depot
         # add depot to the list of demand_nodes in order to calculate travel_time between demand nodes and depot
         # add it at the beginning of the list
+        self.demands_nodes=demands_nodes
         demands_nodes.insert(0, depot)
-        print("demand_nodes and depot = ", demands_nodes)
-        self.demands_nodes = demands_nodes
+        print("depot and demand_nodes  = ", demands_nodes)
         # create empty matrix
         matrix = np.zeros(shape=(len(demands_nodes), len(demands_nodes)), dtype=float)
         print("matrix shape = ", matrix.shape)
