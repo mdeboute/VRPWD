@@ -25,8 +25,8 @@ class TSPWDSolution:
         self.algorithm = algorithm
         self.objective_value = objective_value
         self.solution = solution
-        self.graph=self._create_graph()
-        self._create_tour()
+        self.graph = self._create_graph()
+        self.tour = self._create_tour()
 
         self.__SOLUTION_DIR = str(self.__BASE_DIR) + "/solution/" + self.algorithm
 
@@ -51,7 +51,7 @@ class TSPWDSolution:
         # check for the type of vehicle which use the arc in order to use one color for truck and one color for drone
         vprint("algo = ", self.algorithm)
         vprint("solution = ", self.solution)
-        tour=[]
+        tour = []
         if self.instance._CASE < 1:
             _vehicle = "truck"
             _truck_solution = self.solution
@@ -96,8 +96,9 @@ class TSPWDSolution:
         return graph
 
     def _create_tour(self):
-        """ create the final solution (= 1 tour) list version"""
-        print("==========CREATE FINAL LIST SOLUTION==========")
+        """Create the final solution (= 1 tour) list version"""
+
+        vprint("========== CREATE FINAL LIST SOLUTION ==========")
         if self.instance._CASE < 1:
             _vehicle = "truck"
             _truck_solution = self.solution
@@ -106,20 +107,20 @@ class TSPWDSolution:
             _vehicle = None
             _truck_solution = None
             _drone_solution = None
-        tour=[]
+        tour = []
         for i, x in enumerate(_truck_solution[:-1]):
             y = _truck_solution[i + 1]
             pcc = nx.shortest_path(
                 self.instance.graph, x, y, weight="travel_time", method="dijkstra"
             )
-        #create final solution
-            if len(tour)==0:
-                tour=pcc
+            # create final solution
+            if len(tour) == 0:
+                tour = pcc
             else:
                 pcc.pop(0)
-                tour=tour+pcc
-        self.solution=tour
-    
+                tour = tour + pcc
+        return tour
+
     def plot(self):
         """Plot the graph"""
 
@@ -136,7 +137,13 @@ class TSPWDSolution:
                 count += 1
             else:
                 node_colors.append("b")
-        nx.draw(self.graph, coordinates, node_color=node_colors, with_labels=False,node_size=50)
+        nx.draw(
+            self.graph,
+            coordinates,
+            node_color=node_colors,
+            with_labels=False,
+            node_size=50,
+        )
         # Show plot
         vprint("number_of_demand_nodes = ", count)
         plt.show()

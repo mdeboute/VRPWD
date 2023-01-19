@@ -154,7 +154,7 @@ class TSPWDData(object):
             self.nodes.loc[nearest_node, "demand"] = demand
         end_time = time.time()
         processing_time = end_time - start_time
-        vprint('graph = ',graph)
+        vprint("graph = ", graph)
         vprint("processing_time = ", processing_time)
         return graph
 
