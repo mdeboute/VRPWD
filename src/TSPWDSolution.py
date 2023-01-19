@@ -78,11 +78,9 @@ class TSPWDSolution:
         vprint("depot = ", self.instance.depot)
         for i, x in enumerate(_truck_solution[:-1]):
             y = _truck_solution[i + 1]
-            vprint('demand nodes = ',x , y)
             pcc = nx.shortest_path(
                 self.instance.graph, x, y, weight="travel_time", method="dijkstra"
             )
-            vprint("pcc = ",pcc)
             # loop 2 to 2 over pcc
             for i2, x2 in enumerate(pcc[:-1]):
                 y2 = pcc[i2 + 1]
@@ -90,7 +88,6 @@ class TSPWDSolution:
                 if not graph.has_node(y2):
                     # get y2 instance.graph coordinates
                     y2_coord = self.instance.graph.nodes[y2]["coordinates"]
-                    vprint('intermediate nodes  = ',y2)
                     graph.add_node(y2, coordinates=y2_coord, depot=False, demand=0)
                 graph.add_edge(x2, y2, vehicle="truck")
         end_time = time.time()
@@ -112,7 +109,6 @@ class TSPWDSolution:
         tour=[]
         for i, x in enumerate(_truck_solution[:-1]):
             y = _truck_solution[i + 1]
-            vprint('demand nodes = ',x , y)
             pcc = nx.shortest_path(
                 self.instance.graph, x, y, weight="travel_time", method="dijkstra"
             )
