@@ -339,3 +339,4 @@ class TSPWDData(object):
                 folium.Marker(coord, icon=folium.Icon(color="blue")).add_to(m)
         # Show map
         m.save("assets/map.html")
+        print("HTML Map saved in assets/map.html")

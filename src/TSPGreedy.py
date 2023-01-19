@@ -28,13 +28,16 @@ class TSPGreedy:
             solution.append(closest_city)
             unvisited.remove(closest_city)
 
-        # compute the ojective value, i.e. the total time to visit all cities
+        # Add the return to the depot
+        solution.append(0)
+
+        # Compute the ojective value, i.e. the total time to visit all cities
         obj_value = sum(
             self.instance.time_matrix[solution[i], solution[i + 1]]
             for i in range(len(solution) - 1)
         )
 
-        # update solution to have the id of the nodes thanks to instance.demands_nodes
+        # Update solution to have the id of the nodes thanks to instance.demands_nodes
         solution = [self.instance.demands_nodes[i] for i in solution]
 
         # Return the solution
