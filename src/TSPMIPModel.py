@@ -116,6 +116,7 @@ class TSPMIPModel:
                 self.__algorithm,
                 int(self.model.objective_value),
                 [self.x, self.y],
+                self.instance._VERBOSE,
             )
         else:
             print(f"No solution found in {time_limit} seconds!")

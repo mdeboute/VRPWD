@@ -34,21 +34,11 @@ def main():
         sys.exit(1)
 
     if "-v" in sys.argv or "--verbose" in sys.argv:
-        _verbose = True
+        verbose = True
     else:
-        _verbose = False
+        verbose = False
 
-    if _verbose:
-
-        def _vprint(*args, **kwargs):
-            print(*args, **kwargs)
-
-    else:
-        _vprint = lambda *_, **__: None  # do-nothing function
-    global vprint
-    vprint = _vprint
-
-    data = TSPWDData(instance_dir, case)
+    data = TSPWDData(instance_dir, case, verbose)
 
     if method == "greedy":
         solution = TSPGreedy(data).solve()

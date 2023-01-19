@@ -10,16 +10,19 @@ import folium
 from pathlib import Path
 from Node import Node
 from Edge import Edge
-from tspwdSolver import vprint
+from utils import v_print
 
 
 class TSPWDData(object):
     """This class is used to store the instance information"""
 
-    def __init__(self, instance_dir, case):
+    def __init__(self, instance_dir: str, case: int, verbose: bool):
         self.__MAP_PATH = Path(instance_dir).joinpath("map.json")
         self.__DEMANDS_PATH = Path(instance_dir).joinpath("demands.json")
-        self.__CASE = case
+        self._CASE = case
+        self._VERBOSE = verbose
+        global vprint
+        vprint = v_print(self._VERBOSE)
 
         self._brut_df_map = pd.read_json(self.__MAP_PATH)
         self._brut_df_demands = pd.read_json(self.__DEMANDS_PATH)
@@ -29,7 +32,7 @@ class TSPWDData(object):
         self.df_node_objects = self._create_df_node_objects()
         self.df_edge_objects = self._create_df_edge_objects()
         self.time_matrix = self._create_time_matrix()
-        if self.__CASE > 0:
+        if self._CASE > 0:
             self.drone_matrix = self._create_drone_matrix(drone_speed=50)
 
     def _create_nodes_and_edges_df(self):

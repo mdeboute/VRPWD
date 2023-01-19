@@ -3,7 +3,7 @@ from pathlib import Path
 import networkx as nx
 import time
 import matplotlib.pyplot as plt
-from tspwdSolver import vprint
+from utils import v_print
 
 
 class TSPWDSolution:
@@ -15,14 +15,19 @@ class TSPWDSolution:
         algorithm: str,
         objective_value: int,
         solution,  # TODO: Define the type of decision_variables
+        verbose: bool,
     ):
-        self.__SOLUTION_DIR = str(self.__BASE_DIR) + "/solution/" + self.algorithm
+        self.__VERBOSE = verbose
+        global vprint
+        vprint = v_print(self.__VERBOSE)
 
         self.instance = instance
         self.algorithm = algorithm
         self.objective_value = objective_value
         self.solution = solution
         self.graph = self._create_graph()
+
+        self.__SOLUTION_DIR = str(self.__BASE_DIR) + "/solution/" + self.algorithm
 
     def __str__(self):
         return f"Solution(objective_value={self.objective_value})"
@@ -37,7 +42,7 @@ class TSPWDSolution:
             print(i, end=" ")
         print()
 
-    def graph_sol(self):
+    def _create_graph(self):
         """Create a graph version of the solution with the nodes from the initial graph"""
 
         vprint("=========== GRAPH SOL CREATION ===========")
@@ -45,7 +50,7 @@ class TSPWDSolution:
         # check for the type of vehicle which use the arc in order to use one color for truck and one color for drone
         vprint("algo = ", self.algorithm)
         vprint("solution = ", self.solution)
-        if self.instance.__CASE < 1:
+        if self.instance._CASE < 1:
             _vehicle = "truck"
             _truck_solution = self.solution
         else:
@@ -68,7 +73,7 @@ class TSPWDSolution:
             self.instance.depot, coordinates=graph_coord_depot, depot=True, demand=0
         )
         # compute pcc between consecutive two nodes of the solution
-        print("depot = ", self.instance.depot)
+        vprint("depot = ", self.instance.depot)
         for i, x in enumerate(_truck_solution[:-1]):
             y = _truck_solution[i + 1]
             pcc = nx.shortest_path(
