@@ -154,6 +154,7 @@ class TSPWDData(object):
             self.nodes.loc[nearest_node, "demand"] = demand
         end_time = time.time()
         processing_time = end_time - start_time
+        vprint('graph = ',graph)
         vprint("processing_time = ", processing_time)
         return graph
 
@@ -251,8 +252,6 @@ class TSPWDData(object):
                     matrix[demands_nodes.index(other_node)][
                         demands_nodes.index(current_node)
                     ] = travel_time
-        for i in range(len(matrix)):
-            matrix[i][i] = 10000
         end_time = time.time()
         processing_time = end_time - start_time
         vprint("processing_time = ", processing_time)

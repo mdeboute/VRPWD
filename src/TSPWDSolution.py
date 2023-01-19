@@ -140,7 +140,7 @@ class TSPWDSolution:
                 count += 1
             else:
                 node_colors.append("b")
-        nx.draw(self.graph, coordinates, node_color=node_colors, with_labels=True)
+        nx.draw(self.graph, coordinates, node_color=node_colors, with_labels=False,node_size=50)
         # Show plot
         vprint("number_of_demand_nodes = ", count)
         plt.show()
