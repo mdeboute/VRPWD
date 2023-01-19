@@ -232,8 +232,10 @@ class TSPWDData(object):
         while (depot == None) or (depot in demands_nodes):
             depot = random.randint(1, self.graph.number_of_nodes())
         vprint("depot = ", depot)
+        self.depot = depot
         # add depot to the list of demand_nodes in order to calculate travel_time between demand nodes and depot
         # add it at the beginning of the list
+        self.demands_nodes = demands_nodes
         demands_nodes.insert(0, depot)
 
         vprint("demand_nodes_and_depot = ", demands_nodes)
