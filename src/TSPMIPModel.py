@@ -16,61 +16,61 @@ class TSPMIPModel:
 
         self.x = [
                     [
-                        self.model.add_var(name=f"x_{i}_{j}", var_type=mip.BINARY) for j in range(instance.graph.number_of_nodes())
+                        self.model.add_var(name=f"x_{i}_{j}", var_type=mip.BINARY) for j in range(len(instance.time_matrix))
                     ]
-                    for i in range(instance.graph.number_of_nodes())
+                    for i in range(len(instance.time_matrix))
                 ]
 
         # y[i]  = 1 si le noeud i a ete visite, avec i=0,...,n
         #       = 0 sinon
 
         self.y = [
-            self.model.add_var(name=f"y_{i}", var_type=mip.BINARY) for i in range(instance.graph.number_of_nodes())
+            self.model.add_var(name=f"y_{i}", var_type=mip.BINARY) for i in range(len(instance.time_matrix))
         ]
 
         #Fonction objectif
 
         self.model.objective = mip.xsum(
-            mip.xsum(instance.time_matrix[i][j] * self.x[i][j] for i in range(len(instance.demands_nodes)) ) for j in range(len(instance.demands_nodes))
+            mip.xsum(instance.time_matrix[i][j] * self.x[i][j] for i in range(len(instance.time_matrix)) ) for j in range(len(instance.time_matrix))
         )
 
         #Les contraintes
         
         #Cstr1
-        for j in instance.demands_nodes :
+        for j in range(len(instance.time_matrix)) :
             self.model += (
-                mip.xsum(self.x[i][j] for i in range(instance.graph.number_of_nodes())) == self.y[j]
+                mip.xsum(self.x[i][j] for i in range(len(instance.time_matrix))) == self.y[j]
             )
 
         #Cstr2
-        for j in instance.demands_nodes :
+        for j in range(len(instance.time_matrix)) :
             self.model += (
                 self.y[j] == 1
             )
 
         #Cstr 3
-        for j in range(instance.graph.number_of_nodes()) :
+        for j in range(len(instance.time_matrix)) :
             self.model += (
-                mip.xsum(self.x[i][j] for i in range(instance.graph.number_of_nodes())) == 1
+                mip.xsum(self.x[i][j] for i in range(len(instance.time_matrix))) == 1
             )
 
         #Cstr4
-        for j in range(instance.graph.number_of_nodes()) :
+        for j in range(len(instance.time_matrix)) :
             self.model += (
-                mip.xsum(self.x[j][i] for i in range(instance.graph.number_of_nodes())) == 1
+                mip.xsum(self.x[j][i] for i in range(len(instance.time_matrix))) == 1
             )
 
     def _create_solution(self):
         x = [
                 [ 
-                    self.x[i][j].x for j in range(len(self.instance.nodes))
+                    self.x[i][j].x for j in range(len(self.instance.time_matrix))
                 ]
-                for i in range(len(self.instance.nodes))
+                for i in range(len(self.instance.time_matrix))
             ]
 
 
         y = [
-                self.y[i].x for i in range(len(self.instance.nodes))
+                self.y[i].x for i in range(len(self.instance.time_matrix))
             ]
 
         return x, y
@@ -97,9 +97,9 @@ class TSPMIPModel:
 
         solution = [self.instance.demands_nodes[0]]
         for i in range (len(solution)):
-            for j in range(len(self.instance.nodes)) :
-                if _x[solution[i]][j] == 1 and _y[j] == 1 :
-                    solution.append(j)
+            for j in range(len(self.instance.time_matrix)) :
+                if _x[i][j] == 1 and _y[j] == 1 :
+                    solution.append(self.instance.demands_nodes[j])
 
         #_runtime = self.model.search_progress_log.log[-1][0]
         _runtime = 4
