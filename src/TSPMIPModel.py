@@ -96,10 +96,14 @@ class TSPMIPModel:
         _x, _y = self._create_solution()
 
         solution = [self.instance.demands_nodes[0]]
-        for i in range (len(solution)):
+        k=0
+        for i in range (len(solution)): 
             for j in range(len(self.instance.time_matrix)) :
-                if _x[i][j] == 1 and _y[j] == 1 :
+                if _x[k][j] == 1 and _y[j] == 1 :
                     solution.append(self.instance.demands_nodes[j])
+                    k=j
+
+        print("x= ",_x)
 
         #_runtime = self.model.search_progress_log.log[-1][0]
         _runtime = 4
