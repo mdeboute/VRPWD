@@ -3,7 +3,7 @@ from TSPWDData import TSPWDData
 from TSPWDSolution import TSPWDSolution
 
 
-class FLPMIPModel:
+class TSPMIPModel:
     def __init__(self, instance: TSPWDData):
         self.instance = instance
         self.__algorithm = "MIP"
@@ -16,61 +16,61 @@ class FLPMIPModel:
 
         self.x = [
                     [
-                        self.model.add_var(name=f"x_{i}_{j}", var_type=mip.BINARY) for j in range(len(instance.gdf_nodes))
+                        self.model.add_var(name=f"x_{i}_{j}", var_type=mip.BINARY) for j in range(instance.graph.number_of_nodes())
                     ]
-                    for i in range(len(instance.gdf_nodes))
+                    for i in range(instance.graph.number_of_nodes())
                 ]
 
         # y[i]  = 1 si le noeud i a ete visite, avec i=0,...,n
         #       = 0 sinon
 
         self.y = [
-            self.model.add_var(name=f"y_{i}", var_type=mip.BINARY) for i in range(len(instance.gdf_nodes))
+            self.model.add_var(name=f"y_{i}", var_type=mip.BINARY) for i in range(instance.graph.number_of_nodes())
         ]
 
         #Fonction objectif
 
         self.model.objective = mip.xsum(
-            mip.xsum(instance.time_matrix[i][j] * self.x[i][j] for i in range(len(instance.gdf_nodes)) for j in range(len(instance.gdf_nodes)))
+            mip.xsum(instance.time_matrix[i][j] * self.x[i][j] for i in range(len(instance.demands_nodes)) ) for j in range(len(instance.demands_nodes))
         )
 
         #Les contraintes
         
         #Cstr1
-        for j in range(instance.D):
+        for j in instance.demands_nodes :
             self.model += (
-                mip.xsum(self.x[i][j] for i in range(instance.V)) == y[j]
+                mip.xsum(self.x[i][j] for i in range(instance.graph.number_of_nodes())) == self.y[j]
             )
 
         #Cstr2
         for j in instance.demands_nodes :
             self.model += (
-                y[j] == 1
+                self.y[j] == 1
             )
 
         #Cstr 3
-        for j in instance.demands_nodes :
+        for j in range(instance.graph.number_of_nodes()) :
             self.model += (
-                mip.xsum(self.x[i][j] for i in range(len(instance.gdf_nodes))) == 1
+                mip.xsum(self.x[i][j] for i in range(instance.graph.number_of_nodes())) == 1
             )
 
         #Cstr4
-        for j in range(len(instance.gdf_nodes)):
+        for j in range(instance.graph.number_of_nodes()) :
             self.model += (
-                mip.xsum(self.x[j][i] for i in range(len(instance.gdf_nodes))) == 1
+                mip.xsum(self.x[j][i] for i in range(instance.graph.number_of_nodes())) == 1
             )
 
     def _create_solution(self):
         x = [
                 [ 
-                    self.x[i][j].x for j in range(len(self.instance.gdf_nodes))
+                    self.x[i][j].x for j in range(len(self.instance.nodes))
                 ]
-                for i in range(len(self.instance.gdf_nodes))
+                for i in range(len(self.instance.nodes))
             ]
 
 
         y = [
-                self.y[i].x for i in range(len(self.instance.gdf_nodes))
+                self.y[i].x for i in range(len(self.instance.nodes))
             ]
 
         return x, y
@@ -94,7 +94,15 @@ class FLPMIPModel:
 
         # Create solution
         _x, _y = self._create_solution()
-        _runtime = self.model.search_progress_log.log[-1][0]
+
+        solution = [self.instance.demands_nodes[0]]
+        for i in range (len(solution)):
+            for j in range(len(self.instance.nodes)) :
+                if _x[solution[i]][j] == 1 and _y[j] == 1 :
+                    solution.append(j)
+
+        #_runtime = self.model.search_progress_log.log[-1][0]
+        _runtime = 4
 
         # Get solution
         if _status == mip.OptimizationStatus.OPTIMAL:
@@ -105,8 +113,7 @@ class FLPMIPModel:
                 self.instance,
                 self.__algorithm,
                 int(self.model.objective_value),
-                _x,
-                _y,
+                solution,
             )
         elif _status == mip.OptimizationStatus.FEASIBLE:
             print(
@@ -117,7 +124,7 @@ class FLPMIPModel:
                 self.__algorithm,
                 int(self.model.objective_value),
                 _x,
-                _y,
+                _y
             )
         else:
             print(f"No solution found in {time_limit} seconds!")

@@ -1,6 +1,7 @@
 import sys
 from TSPWDData import TSPWDData
 from TSPGreedy import TSPGreedy
+from TSPMIPModel import TSPMIPModel
 
 
 def print_usage():
@@ -15,8 +16,11 @@ def main():
 
     instance_dir = sys.argv[1]
     data = TSPWDData(instance_dir)
-    sol = TSPGreedy(data).solve()
-    sol.print_tour()
+    sol_TSPGreedy = TSPGreedy(data).solve()
+    sol_TSPGreedy.print_tour()
+
+    sol_TSPMIPModel = TSPMIPModel(data).solve()
+    sol_TSPMIPModel.print_tour()
 
 
 if __name__ == "__main__":
