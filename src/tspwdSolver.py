@@ -34,18 +34,30 @@ def main():
         sys.exit(1)
 
     if "-v" in sys.argv or "--verbose" in sys.argv:
-        verbose = True
+        _verbose = True
     else:
-        verbose = False
+        _verbose = False
 
-    data = TSPWDData(instance_dir, case, verbose)
+    if _verbose:
+
+        def _vprint(*args, **kwargs):
+            print(*args, **kwargs)
+
+    else:
+        _vprint = lambda *_, **__: None  # do-nothing function
+    global vprint
+    vprint = _vprint
+
+    data = TSPWDData(instance_dir, case)
 
     if method == "greedy":
         solution = TSPGreedy(data).solve()
         solution.print_tour()
+        solution.plot()
     if method == "mip":
         solution = TSPMIPModel(data).solve()
         solution.print_tour()
+        solution.plot()
 
 
 if __name__ == "__main__":

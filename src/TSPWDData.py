@@ -10,27 +10,16 @@ import folium
 from pathlib import Path
 from Node import Node
 from Edge import Edge
+from tspwdSolver import vprint
 
 
 class TSPWDData(object):
     """This class is used to store the instance information"""
 
-    def __init__(self, instance_dir, case, verbose):
+    def __init__(self, instance_dir, case):
         self.__MAP_PATH = Path(instance_dir).joinpath("map.json")
         self.__DEMANDS_PATH = Path(instance_dir).joinpath("demands.json")
         self.__CASE = case
-        self.__VERBOSE = verbose
-
-        if self.__VERBOSE:
-
-            def _vprint(*args, **kwargs):
-                print(*args, **kwargs)
-
-        else:
-            _vprint = lambda *_, **__: None  # do-nothing function
-
-        global vprint
-        vprint = _vprint
 
         self._brut_df_map = pd.read_json(self.__MAP_PATH)
         self._brut_df_demands = pd.read_json(self.__DEMANDS_PATH)
@@ -231,11 +220,11 @@ class TSPWDData(object):
         # select a random nodes different from those with demand>0
         while (depot == None) or (depot in demands_nodes):
             depot = random.randint(1, self.graph.number_of_nodes())
+
         vprint("depot = ", depot)
         self.depot = depot
         # add depot to the list of demand_nodes in order to calculate travel_time between demand nodes and depot
         # add it at the beginning of the list
-        self.demands_nodes = demands_nodes
         demands_nodes.insert(0, depot)
 
         vprint("demand_nodes_and_depot = ", demands_nodes)
