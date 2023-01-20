@@ -14,7 +14,7 @@ class TSPWDSolution:
         instance: TSPWDData,
         algorithm: str,
         objective_value: int,
-        solution,  # TODO: Define the type of decision_variables
+        solution,
         verbose: bool,
     ):
         self.__VERBOSE = verbose
@@ -63,7 +63,7 @@ class TSPWDSolution:
         # create graph
         graph = nx.DiGraph()
         # add demand nodes
-        for node in self.instance.demands_nodes:
+        for node in self.instance.depot_plus_demands_nodes:
             val_demand = self.instance.graph.nodes[node]["demand"]
             coord = self.instance.graph.nodes[node]["coordinates"]
             graph.add_node(node, coordinates=coord, depot=False, demand=val_demand)

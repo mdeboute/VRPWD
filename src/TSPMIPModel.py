@@ -8,14 +8,13 @@ from TSPWDSolution import TSPWDSolution
 class TSPMIPModel:
     def __init__(self, instance: TSPWDData):
         self.instance = instance
-        self.__algorithm = "Gurobi"
+        self.__algorithm = "MIP"
         self.model = gp.Model("TSP")
         self.n = len(instance.time_matrix)
         self.nodes = [i for i in range(len(instance.time_matrix))]
         self.time = {
             (i, j): instance.time_matrix[i][j] for i, j in combinations(self.nodes, 2)
         }
-        pass
 
         # Variables: is city 'i' adjacent to city 'j' on the tour?
         self.x = self.model.addVars(
@@ -31,15 +30,15 @@ class TSPMIPModel:
 
     def solve(
         self,
-        verbose: bool = True,
+        verbose: bool = False,
         time_limit: int = 600,
         max_gap: float = 0.00001,
-        nb_threads: int = -1,
+        nb_threads: int = 4,
     ) -> TSPWDSolution:
         self.model.Params.OutputFlag = int(verbose)
         self.model.Params.TimeLimit = time_limit
         self.model.Params.MIPGap = max_gap
-        # self.model.Params.Threads = nb_threads
+        self.model.Params.Threads = nb_threads
 
         def subtourelim(model, where):
             if where == GRB.Callback.MIPSOL:
@@ -58,7 +57,6 @@ class TSPMIPModel:
                     )
 
         # Given a tuplelist of edges, find the shortest subtour
-
         def subtour(edges):
             unvisited = self.nodes[:]
             cycle = self.nodes[:]  # Dummy - guaranteed to be replaced
@@ -70,7 +68,7 @@ class TSPMIPModel:
                     thiscycle.append(current)
                     unvisited.remove(current)
                     neighbors = [
-                        j for i, j in edges.select(current, "*") if j in unvisited
+                        j for _, j in edges.select(current, "*") if j in unvisited
                     ]
                 if len(thiscycle) <= len(cycle):
                     cycle = thiscycle  # New shortest subtour
@@ -85,11 +83,8 @@ class TSPMIPModel:
         selected = gp.tuplelist((i, j) for i, j in vals.keys() if vals[i, j] > 0.5)
         tour = subtour(selected) + [0]
 
-        solution = [self.instance.demands_nodes[j] for j in tour]
+        solution = [self.instance.depot_plus_demands_nodes[j] for j in tour]
 
-        print("Solution= ", solution)
-
-        # _runtime = self.model.search_progress_log.log[-1][0]
         _runtime = self.model.Runtime
 
         # Get solution

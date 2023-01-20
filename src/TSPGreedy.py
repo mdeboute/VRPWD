@@ -36,7 +36,7 @@ class TSPGreedy:
         obj_value = np.sum(self.instance.time_matrix[solution[:-1], solution[1:]])
 
         # Update solution to have the id of the nodes thanks to instance.demands_nodes
-        solution = [self.instance.demands_nodes[i] for i in solution]
+        solution = [self.instance.depot_plus_demands_nodes[i] for i in solution]
 
         # Return the solution
         return TSPWDSolution(

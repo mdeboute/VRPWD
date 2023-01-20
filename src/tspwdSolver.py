@@ -39,13 +39,14 @@ def main():
         verbose = False
 
     data = TSPWDData(instance_dir, case, verbose)
+    data.save_map_html()
 
     if method == "greedy":
         solution = TSPGreedy(data).solve()
         solution.print_tour()
         solution.plot()
     if method == "mip":
-        solution = TSPMIPModel(data).solve()
+        solution = TSPMIPModel(data).solve(verbose)
         solution.print_tour()
         solution.plot()
 

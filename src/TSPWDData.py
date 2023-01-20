@@ -1,15 +1,15 @@
 import pandas as pd
 import geopandas as gpd
-import random
 import numpy as np
 import matplotlib.pyplot as plt
-from geopy.distance import geodesic
 import time
 import networkx as nx
 import folium
+
+from geopy.distance import geodesic
+from folium import DivIcon
 from pathlib import Path
-from Node import Node
-from Edge import Edge
+from scipy.spatial import cKDTree
 from utils import v_print
 
 
@@ -24,21 +24,20 @@ class TSPWDData(object):
         global vprint
         vprint = v_print(self._VERBOSE)
 
-        self._brut_df_map = pd.read_json(self.__MAP_PATH)
-        self._brut_df_demands = pd.read_json(self.__DEMANDS_PATH)
+        self.__brut_df_map = pd.read_json(self.__MAP_PATH)
+        self.__brut_df_demands = pd.read_json(self.__DEMANDS_PATH)
+        self.__gdf_nodes, self.__gdf_edges = self._create_gdfs()
 
-        self.nodes, self.edges = self._create_nodes_and_edges_df()
         self.graph = self._create_graph()
-        self.df_node_objects = self._create_df_node_objects()
-        self.df_edge_objects = self._create_df_edge_objects()
         self.time_matrix = self._create_time_matrix()
+
         if self._CASE > 0:
             self.drone_matrix = self._create_drone_matrix(drone_speed=50)
 
-    def _create_nodes_and_edges_df(self):
+    def _create_gdfs(self):
         start_time = time.time()
-        vprint("=================== BRUT NODES AND EDGES CREATION ===================")
-        list_coords = []
+        vprint("=================== NODES AND EDGES GDF CREATION ===================")
+        coords_dict = {}
         rows_gdf_nodes = []
         cols_gdf_nodes = ["lat", "lon", "demand"]
         rows_gdf_edges = []
@@ -51,27 +50,22 @@ class TSPWDData(object):
             "osm_type",
             "travel_time",
         ]
-
-        for _, row in self._brut_df_map.iterrows():
-            if (row["lat_min"], row["lon_min"]) in list_coords:
-                idx_src = list_coords.index((row["lat_min"], row["lon_min"])) + 1
-            else:
-                list_coords.append((row["lat_min"], row["lon_min"]))
-                idx_src = len(list_coords)
-            if (row["lat_max"], row["lon_max"]) in list_coords:
-                idx_dest = list_coords.index((row["lat_max"], row["lon_max"])) + 1
-            else:
-                list_coords.append((row["lat_max"], row["lon_max"]))
-                idx_dest = len(list_coords)
+        for _, row in self.__brut_df_map.iterrows():
+            if (row["lat_min"], row["lon_min"]) not in coords_dict:
+                coords_dict[(row["lat_min"], row["lon_min"])] = len(coords_dict) + 1
+            idx_src = coords_dict[(row["lat_min"], row["lon_min"])]
+            if (row["lat_max"], row["lon_max"]) not in coords_dict:
+                coords_dict[(row["lat_max"], row["lon_max"])] = len(coords_dict) + 1
+            idx_dest = coords_dict[(row["lat_max"], row["lon_max"])]
 
             length = row["length"]
             osm_id = row["osmid"]
             osm_type = row["type"]
             if osm_type == "primary":
                 speed = 60
-            if osm_type == "secondary":
+            elif osm_type == "secondary":
                 speed = 45
-            if osm_type == "tertiary":
+            else:
                 speed = 30
             m_per_s_speed = round(speed / 3.6, 2)
             travel_time = length / m_per_s_speed
@@ -86,19 +80,17 @@ class TSPWDData(object):
                     "travel_time": travel_time,
                 }
             )
-        gdf_edges = gpd.GeoDataFrame(rows_gdf_edges, columns=cols_gdf_edges)
-        gdf_edges.index = range(1, len(gdf_edges) + 1)
-        for coord in list_coords:
+
+        for coord, _ in coords_dict.items():
             x = coord[0]
             y = coord[1]
             rows_gdf_nodes.append({"lat": x, "lon": y, "demand": 0})
         gdf_nodes = gpd.GeoDataFrame(rows_gdf_nodes, columns=cols_gdf_nodes)
-        # there is duplicate node if brut_gdf_nodes, so we drop them
-        gdf_nodes = gdf_nodes.drop_duplicates(subset=["lat", "lon"], keep="first")
-        # reindex the gdf
-        gdf_nodes.index = range(1, len(gdf_nodes) + 1)
+        gdf_edges = gpd.GeoDataFrame(rows_gdf_edges, columns=cols_gdf_edges)
         end_time = time.time()
         processing_time = end_time - start_time
+        vprint(gdf_nodes)
+        vprint(gdf_edges)
         vprint("processing_time = ", processing_time)
         return gdf_nodes, gdf_edges
 
@@ -108,14 +100,14 @@ class TSPWDData(object):
         # create empty undirected graph
         graph = nx.Graph()
         # add nodes
-        for idx, row in self.nodes.iterrows():
+        for idx, row in self.__gdf_nodes.iterrows():
             lat = row["lat"]
             lon = row["lon"]
-            coord = (lon, lat)
+            coord = (lat, lon)
             d = row["demand"]
-            graph.add_node(idx, coordinates=coord, demand=d)
+            graph.add_node(idx + 1, coordinates=coord, demand=d)
         # add edges
-        for idx, row in self.edges.iterrows():
+        for idx, row in self.__gdf_edges.iterrows():
             src = row["src"]
             dest = row["dest"]
             length = row["length"]
@@ -126,85 +118,33 @@ class TSPWDData(object):
             graph.add_edge(
                 src,
                 dest,
-                id=idx,
+                id=idx + 1,
                 length=length,
                 osm_type=osm_type,
                 speed=speed,
                 osm_id=osm_id,
                 travel_time=travel_time,
             )
+        # Build K-D Tree
+        coords = self.__gdf_nodes[["lat", "lon"]].to_numpy()
+        tree = cKDTree(coords)
         # add demand
-        for _, row in self._brut_df_demands.iterrows():
+        for _, row in self.__brut_df_demands.iterrows():
             point = (row["lat"], row["lon"])
             demand = row["amount"]
-            nearest_node = None
-            nearest_distance = float("inf")
-            for node in graph.nodes:
-                node_coord = graph.nodes[node]["coordinates"]
-                node_coords_inversed = (node_coord[1], node_coord[0])
-                # compute euclidian distance through Haversine formula
-                dist = geodesic(point, node_coords_inversed).km
-                if dist < nearest_distance:
-                    nearest_distance = dist
-                    nearest_node = node
+            # Find nearest node with K-D Tree
+            _, nearest_node = tree.query(point)
+            nearest_node = nearest_node + 1
             # update the demand
             # in the graph
             graph.nodes[nearest_node].update({"demand": demand})
             # in the df
-            self.nodes.loc[nearest_node, "demand"] = demand
+            self.__gdf_nodes.loc[nearest_node, "demand"] = demand
         end_time = time.time()
         processing_time = end_time - start_time
         vprint("graph = ", graph)
         vprint("processing_time = ", processing_time)
         return graph
-
-    def _create_df_node_objects(self):
-        """create a df with 1 column 'Node Object' with all nodes"""
-        vprint("=========== DF NODE OBJECTS CREATION ===========")
-        start_time = time.time()
-        rows_df_nodes = []
-        cols_df_nodes = ["Node Object"]
-        for idx, row in self.nodes.iterrows():
-            node = Node(idx, row["lat"], row["lon"], row["demand"])
-            rows_df_nodes.append({"Node Object": node})
-        df_nodes_object = pd.DataFrame(
-            rows_df_nodes, columns=cols_df_nodes, index=range(1, len(self.nodes) + 1)
-        )
-        end_time = time.time()
-        processing_time = end_time - start_time
-        vprint("processing_time = ", processing_time)
-        return df_nodes_object
-
-    def _create_df_edge_objects(self):
-        """create a df with 1 column 'Edge Object' with all edges"""
-        vprint("=========== DF EDGE OBJECTS CREATION ===========")
-        start_time = time.time()
-        rows_df_edges = []
-        cols_df_edges = ["Edge Object"]
-        vprint("nb_edges_in_brut_df = ", len(self.edges))
-        vprint("nb_edges_in_graph = ", self.graph.number_of_edges())
-        i = 1
-        for e in self.graph.edges():
-            edge = Edge(
-                i,
-                e[0],
-                e[1],
-                self.graph.edges[e]["length"],
-                self.graph.edges[e]["speed"],
-                self.graph.edges[e]["osm_id"],
-                self.graph.edges[e]["osm_type"],
-                self.graph.edges[e]["travel_time"],
-            )
-            rows_df_edges.append({"Edge Object": edge})
-        df_edge_objects = pd.DataFrame(
-            rows_df_edges,
-            columns=cols_df_edges,
-            index=range(1, self.graph.number_of_edges() + 1),
-        )
-        end_time = time.time()
-        processing_time = end_time - start_time
-        vprint("processing_time = ", processing_time)
-        return df_edge_objects
 
     def _create_time_matrix(self):
         """Create the D+1xD+1 travel time matrix from the road point of view
@@ -213,45 +153,32 @@ class TSPWDData(object):
 
         vprint("================== CREATE TIME MATRIX ==================")
         start_time = time.time()
-        round_precision = 3
         demands_nodes = []
-        depot = None
+        self.depot = 1
         # get demand nodes
         for node in self.graph.nodes():
             if self.graph.nodes[node]["demand"] > 0:
                 demands_nodes.append(node)
-        vprint("demand_nodes = ", demands_nodes)
-        # select a random nodes different from those with demand>0
-        while (depot == None) or (depot in demands_nodes):
-            depot = random.randint(1, self.graph.number_of_nodes())
-
-        vprint("depot = ", depot)
-        self.depot = depot
+        vprint("depot = ", self.depot)
         # add depot to the list of demand_nodes in order to calculate travel_time between demand nodes and depot
         # add it at the beginning of the list
-        demands_nodes.insert(0, depot)
+        demands_nodes.insert(0, self.depot)
+        self.depot_plus_demands_nodes = demands_nodes
+        vprint("depot_plus_demands_nodes = ", demands_nodes)
 
-        vprint("demand_nodes_and_depot = ", demands_nodes)
-        self.demands_nodes = demands_nodes
         # create empty matrix
         matrix = np.zeros(shape=(len(demands_nodes), len(demands_nodes)), dtype=float)
         vprint("matrix_shape = ", matrix.shape)
-        # compute shortest path in term of travel time
-        for current_node in demands_nodes:
-            for other_node in demands_nodes:
-                if current_node != other_node:
-                    travel_time = round(
-                        nx.dijkstra_path_length(
-                            self.graph, current_node, other_node, weight="travel_time"
-                        ),
-                        round_precision,
-                    )
-                    matrix[demands_nodes.index(current_node)][
-                        demands_nodes.index(other_node)
-                    ] = travel_time
-                    matrix[demands_nodes.index(other_node)][
-                        demands_nodes.index(current_node)
-                    ] = travel_time
+        # pre-compute shortest paths
+        shortest_paths = dict(
+            nx.all_pairs_dijkstra_path_length(self.graph, weight="travel_time")
+        )
+        # fill matrix
+        for i, current_node in enumerate(demands_nodes):
+            for j, other_node in enumerate(demands_nodes):
+                if i != j:
+                    matrix[i][j] = round(shortest_paths[current_node][other_node], 3)
+                    matrix[j][i] = matrix[i][j]
         end_time = time.time()
         processing_time = end_time - start_time
         vprint("processing_time = ", processing_time)
@@ -262,36 +189,31 @@ class TSPWDData(object):
 
         vprint("================ CREATE DRONE MATRIX ================")
         start_time = time.time()
-        round_number = 3
         # create matrix of dimension NxN with N the number of nodes in the graph
         number_of_nodes = self.graph.number_of_nodes()
-        vprint("number_of_nodes = ", number_of_nodes)
         matrix = np.zeros(shape=(number_of_nodes, number_of_nodes), dtype=float)
         vprint("matrix shape = ", matrix.shape)
+        # precompute coordinates inversed
+        coordinates = {
+            node: (
+                self.graph.nodes[node]["coordinates"][1],
+                self.graph.nodes[node]["coordinates"][0],
+            )
+            for node in self.graph.nodes
+        }
+
         # loop over nodes to calculate travel time between current node and others nodes
         for current_node in self.graph.nodes:
             for other_node in self.graph.nodes:
                 if current_node != other_node:
                     if matrix[current_node - 1][other_node - 1] == 0:
                         # get coordinates for both nodes
-                        current_node_coord = self.graph.nodes[current_node][
-                            "coordinates"
-                        ]
-                        current_node_coords_inversed = (
-                            current_node_coord[1],
-                            current_node_coord[0],
-                        )
-                        other_node_coord = self.graph.nodes[other_node]["coordinates"]
-                        other_node_coord_inversed = (
-                            other_node_coord[1],
-                            other_node_coord[0],
-                        )
-                        dist = geodesic(
-                            current_node_coords_inversed, other_node_coord_inversed
-                        ).m
+                        current_node_coord = coordinates[current_node]
+                        other_node_coord = coordinates[other_node]
+                        dist = geodesic(current_node_coord, other_node_coord).m
                         # calculate travel time
                         m_per_s_drone_speed = drone_speed / 3.6
-                        travel_time = round(dist / m_per_s_drone_speed, round_number)
+                        travel_time = round(dist / m_per_s_drone_speed, 3)
                         matrix[current_node - 1][other_node - 1] = travel_time
                         matrix[other_node - 1][current_node - 1] = travel_time
         end_time = time.time()
@@ -323,11 +245,24 @@ class TSPWDData(object):
         # Create map
         m = folium.Map(location=[44.838633, 0.540983], zoom_start=13)
         # Add points to the map according to the demand
-        for _, row in self.nodes.iterrows():
+        for _, row in self.__gdf_nodes.iterrows():
             coord = (row["lat"], row["lon"])
             list_coords.append(coord)
             if row["demand"] > 0:
                 folium.Marker(coord, icon=folium.Icon(color="red")).add_to(m)
+                # add the number of demand on the node
+                folium.Marker(
+                    coord,
+                    icon=DivIcon(
+                        icon_size=(150, 36),
+                        icon_anchor=(0, 0),
+                        html="""
+                        <div style="font-size: 20pt">%s</div>
+                        """
+                        % row["demand"],
+                    ),
+                ).add_to(m)
+
             else:
                 folium.Marker(coord, icon=folium.Icon(color="blue")).add_to(m)
         # Show map
