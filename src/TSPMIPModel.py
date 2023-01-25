@@ -1,12 +1,12 @@
 import gurobipy as gp
 from gurobipy import GRB
 from itertools import combinations
-from TSPWDData import TSPWDData
-from TSPWDSolution import TSPWDSolution
+from VRPWDData import VRPWDData
+from VRPWDSolution import VRPWDSolution
 
 
 class TSPMIPModel:
-    def __init__(self, instance: TSPWDData):
+    def __init__(self, instance: VRPWDData):
         self.instance = instance
         self.__algorithm = "MIP"
         self.model = gp.Model("TSP")
@@ -35,7 +35,7 @@ class TSPMIPModel:
         time_limit: int = 600,
         max_gap: float = 0.00001,
         nb_threads: int = 4,
-    ) -> TSPWDSolution:
+    ) -> VRPWDSolution:
         self.model.Params.OutputFlag = int(verbose)
         self.model.Params.TimeLimit = time_limit
         self.model.Params.MIPGap = max_gap
@@ -93,7 +93,7 @@ class TSPMIPModel:
             print(
                 f"Optimal Result: runtime={_runtime:.2f}sec; objective={int(self.model.ObjVal)}; gap={self.model.MIPGap:.4f}%"
             )
-            return TSPWDSolution(
+            return VRPWDSolution(
                 self.instance,
                 self.__algorithm,
                 int(self.model.ObjVal),
@@ -104,7 +104,7 @@ class TSPMIPModel:
             print(
                 f"Result: runtime={_runtime:.2f}sec; objective={int(self.model.ObjVal)}; gap={100*self.model.MIPGap:.4f}%"
             )
-            return TSPWDSolution(
+            return VRPWDSolution(
                 self.instance,
                 self.__algorithm,
                 int(self.model.ObjVal),

@@ -1,18 +1,20 @@
-from TSPWDData import TSPWDData
-from TSPWDSolution import TSPWDSolution
+from VRPWDData import VRPWDData
+from VRPWDSolution import VRPWDSolution
 import numpy as np
+import time
 
 
 class TSPGreedy:
     """An implementation of the Greedy heuristic for the TSP."""
 
-    def __init__(self, instance: TSPWDData):
+    def __init__(self, instance: VRPWDData):
         self.instance = instance
         self.__algorithm = "NN_Greedy"
 
-    def solve(self) -> TSPWDSolution:
+    def solve(self) -> VRPWDSolution:
         """Solve the TSP using the Greedy heuristic."""
 
+        start = time.time()
         # Initialize the solution
         solution = [0]
         unvisited = np.array(range(1, self.instance.dpd_time_matrix.shape[0]))
@@ -37,9 +39,14 @@ class TSPGreedy:
 
         # Update solution to have the id of the nodes thanks to instance.demands_nodes
         solution = [self.instance.dpd_nodes[i] for i in solution]
-
+        end = time.time()
+        print(
+            "Time to solve the TSP with Greedy heuristic: ",
+            round(end - start, 4),
+            "sec",
+        )
         # Return the solution
-        return TSPWDSolution(
+        return VRPWDSolution(
             self.instance,
             self.__algorithm,
             round(obj_value),

@@ -1,4 +1,4 @@
-from TSPWDData import TSPWDData
+from VRPWDData import VRPWDData
 from pathlib import Path
 import networkx as nx
 import time
@@ -6,12 +6,12 @@ import matplotlib.pyplot as plt
 from utils import v_print
 
 
-class TSPWDSolution:
+class VRPWDSolution:
     __BASE_DIR = Path(__file__).resolve().parent.parent
 
     def __init__(
         self,
-        instance: TSPWDData,
+        instance: VRPWDData,
         algorithm: str,
         objective_value: int,
         solution,
@@ -49,7 +49,6 @@ class TSPWDSolution:
         """Create the final solution graph version"""
 
         vprint("=========== GRAPH FINAL SOLUTION CREATION ===========")
-        start_time = time.time()
         # check for the type of vehicle which use the arc in order to use one color for truck and one color for drone
         vprint("algo = ", self.algorithm)
         vprint("solution = ", self.solution)
@@ -77,7 +76,6 @@ class TSPWDSolution:
             self.instance.deposit, coordinates=graph_coord_depot, depot=True, demand=0
         )
         # compute sp between consecutive two nodes of the solution
-        vprint("depot = ", self.instance.deposit)
         for i, x in enumerate(_truck_solution[:-1]):
             y = _truck_solution[i + 1]
             sp = nx.shortest_path(
@@ -92,15 +90,11 @@ class TSPWDSolution:
                     y2_coord = self.instance.graph.nodes[y2]["coordinates"]
                     graph.add_node(y2, coordinates=y2_coord, depot=False, demand=0)
                 graph.add_edge(x2, y2, vehicle="truck")
-        end_time = time.time()
-        processing_time = end_time - start_time
-        vprint("processing_time = ", processing_time)
         return graph
 
     def _create_tour(self):
         """Create the final solution (= 1 tour) list version"""
 
-        vprint("========== CREATE FINAL LIST SOLUTION ==========")
         if self.instance._CASE < 1:
             _vehicle = "truck"
             _truck_solution = self.solution
@@ -168,6 +162,7 @@ class TSPWDSolution:
                 _time_cpt += self.instance.graph.edges[self.tour[i], self.tour[i + 1]][
                     "travel_time"
                 ]
+
                 f.write(
                     f"{_time_cpt} ; ARRIVEE VEHICULE ; (LAT : {_coords[self.tour[i+1]][0]} ; LON : {_coords[self.tour[i+1]][1]})\n"
                 )

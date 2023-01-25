@@ -13,7 +13,7 @@ from scipy.spatial import cKDTree
 from utils import v_print
 
 
-class TSPWDData(object):
+class VRPWDData(object):
     """This class is used to store the instance information"""
 
     def __init__(self, instance_dir: str, case: int, verbose: bool):
@@ -32,7 +32,7 @@ class TSPWDData(object):
         self.graph = self._create_graph()
         self.dpd_time_matrix = self._create_dpd_time_matrix()
 
-        if self._CASE > 0:
+        if self._CASE > 0:  # vrp
             self.drone_matrix = self._create_drone_matrix(drone_speed=50)
 
     def _create_gdfs(self):
@@ -166,12 +166,12 @@ class TSPWDData(object):
         for node in self.graph.nodes():
             if self.graph.nodes[node]["demand"] > 0:
                 demands_nodes.append(node)
-        vprint("depot = ", self.deposit)
+        vprint("deposit = ", self.deposit)
         # add deposit to the list of demand_nodes in order to calculate travel_time between demand nodes and deposit
         # add it at the beginning of the list
         demands_nodes.insert(0, self.deposit)
         self.dpd_nodes = demands_nodes
-        vprint("depot_plus_demands_nodes = ", self.dpd_nodes)
+        vprint("dpd_nodes = ", self.dpd_nodes)
 
         # create empty matrix
         matrix = np.zeros(shape=(len(demands_nodes), len(demands_nodes)), dtype=float)
@@ -257,19 +257,12 @@ class TSPWDData(object):
             list_coords.append(coord)
             if row["demand"] > 0:
                 folium.Marker(coord, icon=folium.Icon(color="red")).add_to(m)
-                # add the number of demand on the node
+                # add the demand value as a popup
                 folium.Marker(
                     coord,
-                    icon=DivIcon(
-                        icon_size=(150, 36),
-                        icon_anchor=(0, 0),
-                        html="""
-                        <div style="font-size: 20pt">%s</div>
-                        """
-                        % row["demand"],
-                    ),
+                    popup=f"Demand: {row['demand']}",
+                    icon=folium.Icon(color="red"),
                 ).add_to(m)
-
             else:
                 folium.Marker(coord, icon=folium.Icon(color="blue")).add_to(m)
 
