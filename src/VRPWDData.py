@@ -7,7 +7,6 @@ import networkx as nx
 import folium
 
 from geopy.distance import geodesic
-from folium import DivIcon
 from pathlib import Path
 from scipy.spatial import cKDTree
 from utils import v_print

@@ -31,7 +31,7 @@ class TSPGreedy:
             solution.append(closest_city)
             unvisited = np.delete(unvisited, np.where(unvisited == closest_city))
 
-        # Add the return to the depot
+        # Add the return to the deposit
         solution.append(0)
 
         # Compute the ojective value, i.e. the total time to visit all cities

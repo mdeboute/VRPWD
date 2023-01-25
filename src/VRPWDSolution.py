@@ -67,13 +67,16 @@ class VRPWDSolution:
         for node in self.instance.dpd_nodes:
             val_demand = self.instance.graph.nodes[node]["demand"]
             coord = self.instance.graph.nodes[node]["coordinates"]
-            graph.add_node(node, coordinates=coord, depot=False, demand=val_demand)
-        # add depot node
-        graph_coord_depot = self.instance.graph.nodes[self.instance.deposit][
+            graph.add_node(node, coordinates=coord, deposit=False, demand=val_demand)
+        # add deposit node
+        graph_coord_deposit = self.instance.graph.nodes[self.instance.deposit][
             "coordinates"
         ]
         graph.add_node(
-            self.instance.deposit, coordinates=graph_coord_depot, depot=True, demand=0
+            self.instance.deposit,
+            coordinates=graph_coord_deposit,
+            deposit=True,
+            demand=0,
         )
         # compute sp between consecutive two nodes of the solution
         for i, x in enumerate(_truck_solution[:-1]):
@@ -88,7 +91,7 @@ class VRPWDSolution:
                 if not graph.has_node(y2):
                     # get y2 instance.graph coordinates
                     y2_coord = self.instance.graph.nodes[y2]["coordinates"]
-                    graph.add_node(y2, coordinates=y2_coord, depot=False, demand=0)
+                    graph.add_node(y2, coordinates=y2_coord, deposit=False, demand=0)
                 graph.add_edge(x2, y2, vehicle="truck")
         return graph
 
@@ -125,12 +128,13 @@ class VRPWDSolution:
         coordinates = nx.get_node_attributes(self.graph, "coordinates")
         node_colors = []
         for node in self.graph.nodes():
-            if self.graph.nodes[node]["depot"]:
+            if self.graph.nodes[node]["deposit"]:
                 node_colors.append("g")
             elif self.graph.nodes[node]["demand"] > 0:
                 node_colors.append("r")
             else:
                 node_colors.append("b")
+
         nx.draw(
             self.graph,
             coordinates,
@@ -143,8 +147,23 @@ class VRPWDSolution:
         plt.show()
 
     def check(self):
-        # TODO: Check if the solution is feasible
-        pass
+        if self.instance._CASE < 1:
+            # check if all demand nodes are in the tour
+            for node in self.instance.dpd_nodes[1:]:
+                if node not in self.tour:
+                    print(f"ERROR : node {node} not in tour")
+                    return False
+            # check that we start and end at the deposit
+            if self.tour[0] != self.instance.deposit:
+                print(f"ERROR : tour does not start at deposit")
+                return False
+            if self.tour[-1] != self.instance.deposit:
+                print(f"ERROR : tour does not end at deposit")
+                return False
+            # check that we do not visit the deposit twice
+            if self.tour.count(self.instance.deposit) > 2:
+                print(f"ERROR : tour visits deposit twice")
+                return False
 
     def write(self):
         Path(self.__SOLUTION_DIR).mkdir(parents=True, exist_ok=True)
