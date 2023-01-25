@@ -28,7 +28,9 @@ class TSPWDSolution:
         self.graph = self._create_graph()
         self.tour = self._create_tour()
 
-        self.__SOLUTION_DIR = str(self.__BASE_DIR) + "/solution/" + self.algorithm
+        self.__SOLUTION_DIR = (
+            str(self.__BASE_DIR) + "/solution/" + self.instance._INSTANCE_NAME + "/"
+        )
 
     def __str__(self):
         return f"Solution(objective_value={self.objective_value})"
@@ -63,27 +65,27 @@ class TSPWDSolution:
         # create graph
         graph = nx.DiGraph()
         # add demand nodes
-        for node in self.instance.depot_plus_demands_nodes:
+        for node in self.instance.dpd_nodes:
             val_demand = self.instance.graph.nodes[node]["demand"]
             coord = self.instance.graph.nodes[node]["coordinates"]
             graph.add_node(node, coordinates=coord, depot=False, demand=val_demand)
         # add depot node
-        graph_coord_depot = self.instance.graph.nodes[self.instance.depot][
+        graph_coord_depot = self.instance.graph.nodes[self.instance.deposit][
             "coordinates"
         ]
         graph.add_node(
-            self.instance.depot, coordinates=graph_coord_depot, depot=True, demand=0
+            self.instance.deposit, coordinates=graph_coord_depot, depot=True, demand=0
         )
-        # compute pcc between consecutive two nodes of the solution
-        vprint("depot = ", self.instance.depot)
+        # compute sp between consecutive two nodes of the solution
+        vprint("depot = ", self.instance.deposit)
         for i, x in enumerate(_truck_solution[:-1]):
             y = _truck_solution[i + 1]
-            pcc = nx.shortest_path(
+            sp = nx.shortest_path(
                 self.instance.graph, x, y, weight="travel_time", method="dijkstra"
             )
-            # loop 2 to 2 over pcc
-            for i2, x2 in enumerate(pcc[:-1]):
-                y2 = pcc[i2 + 1]
+            # loop 2 to 2 over sp
+            for i2, x2 in enumerate(sp[:-1]):
+                y2 = sp[i2 + 1]
                 # check if y2 not already in nodes
                 if not graph.has_node(y2):
                     # get y2 instance.graph coordinates
@@ -110,15 +112,15 @@ class TSPWDSolution:
         tour = []
         for i, x in enumerate(_truck_solution[:-1]):
             y = _truck_solution[i + 1]
-            pcc = nx.shortest_path(
+            sp = nx.shortest_path(
                 self.instance.graph, x, y, weight="travel_time", method="dijkstra"
             )
             # create final solution
             if len(tour) == 0:
-                tour = pcc
+                tour = sp
             else:
-                pcc.pop(0)
-                tour = tour + pcc
+                sp.pop(0)
+                tour = tour + sp
         return tour
 
     def plot(self):
@@ -128,13 +130,11 @@ class TSPWDSolution:
         # Draw graph
         coordinates = nx.get_node_attributes(self.graph, "coordinates")
         node_colors = []
-        count = 0
         for node in self.graph.nodes():
             if self.graph.nodes[node]["depot"]:
                 node_colors.append("g")
             elif self.graph.nodes[node]["demand"] > 0:
                 node_colors.append("r")
-                count += 1
             else:
                 node_colors.append("b")
         nx.draw(
@@ -145,7 +145,7 @@ class TSPWDSolution:
             node_size=50,
         )
         # Show plot
-        vprint("number_of_demand_nodes = ", count)
+        vprint("number_of_demand_nodes = ", len(self.instance.dpd_nodes) - 1)
         plt.show()
 
     def check(self):
@@ -153,5 +153,29 @@ class TSPWDSolution:
         pass
 
     def write(self):
-        # TODO:Write the solution to a file
-        pass
+        Path(self.__SOLUTION_DIR).mkdir(parents=True, exist_ok=True)
+
+        _sol_file = self.__SOLUTION_DIR + self.algorithm + "_result.txt"
+        _time_cpt = 0
+        _coords = nx.get_node_attributes(self.graph, "coordinates")
+
+        with open(_sol_file, "w") as f:
+            f.write("TEMPS ; EVENEMENT ; LOCALISATION\n")
+            for i in range(len(self.tour) - 1):
+                f.write(
+                    f"{_time_cpt} ; DEPLACEMENT VEHICULE DESTINATION (LAT : {_coords[self.tour[i]][0]} ; LON : {_coords[self.tour[i]][1]}) ; (LAT : {_coords[self.tour[i+1]][0]} ; LON : {_coords[self.tour[i+1]][1]})\n"
+                )
+                _time_cpt += self.instance.graph.edges[self.tour[i], self.tour[i + 1]][
+                    "travel_time"
+                ]
+                f.write(
+                    f"{_time_cpt} ; ARRIVEE VEHICULE ; (LAT : {_coords[self.tour[i+1]][0]} ; LON : {_coords[self.tour[i+1]][1]})\n"
+                )
+                if (
+                    self.tour[i + 1] in self.instance.dpd_nodes[1:]
+                    and self.instance._CASE < 1
+                ):
+                    f.write(
+                        f"{_time_cpt} ; LIVRAISON COLIS ID : {self.tour[i+1]} ; (LAT : {_coords[self.tour[i+1]][0]} ; LON : {_coords[self.tour[i+1]][1]})\n"
+                    )
+        print(f"Solution written in {_sol_file}")

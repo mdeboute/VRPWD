@@ -45,10 +45,12 @@ def main():
         solution = TSPGreedy(data).solve()
         solution.print_tour()
         solution.plot()
+        solution.write()
     if method == "mip":
         solution = TSPMIPModel(data).solve(verbose)
         solution.print_tour()
         solution.plot()
+        solution.write()
 
 
 if __name__ == "__main__":

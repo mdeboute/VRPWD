@@ -10,10 +10,11 @@ class TSPMIPModel:
         self.instance = instance
         self.__algorithm = "MIP"
         self.model = gp.Model("TSP")
-        self.n = len(instance.time_matrix)
-        self.nodes = [i for i in range(len(instance.time_matrix))]
+        self.n = len(instance.dpd_time_matrix)
+        self.nodes = [i for i in range(len(instance.dpd_time_matrix))]
         self.time = {
-            (i, j): instance.time_matrix[i][j] for i, j in combinations(self.nodes, 2)
+            (i, j): instance.dpd_time_matrix[i][j]
+            for i, j in combinations(self.nodes, 2)
         }
 
         # Variables: is city 'i' adjacent to city 'j' on the tour?
@@ -83,7 +84,7 @@ class TSPMIPModel:
         selected = gp.tuplelist((i, j) for i, j in vals.keys() if vals[i, j] > 0.5)
         tour = subtour(selected) + [0]
 
-        solution = [self.instance.depot_plus_demands_nodes[j] for j in tour]
+        solution = [self.instance.dpd_nodes[j] for j in tour]
 
         _runtime = self.model.Runtime
 
