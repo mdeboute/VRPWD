@@ -132,3 +132,6 @@ assets/
 
 # Visual studio
 .vs/
+
+# Personal draft
+draft/
