@@ -133,5 +133,8 @@ assets/
 # Visual studio
 .vs/
 
+# Output directory
+solution/
+
 # Personal draft
 draft/

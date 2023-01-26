@@ -1,6 +1,6 @@
-# TSPWD
+# VRPWD
 
-[Here](./projet.pdf) is the french subject of the La Poste TSP With Drones project.
+[Here](./projet.pdf) is the french subject of the La Poste VRP With Drones project.
 
 Don't forget to do a `pip install -r requirements.txt` before running the code.
 
@@ -8,7 +8,7 @@ If you install a new package, don't forget to add it to the `requirements.txt` f
 
 For the main program:
 
-Type `python3 src/tspwdSolver.py -h` for help.
+Type `python3 src/vrpwdSolver.py -h` for help.
 
 ## Social Networks
 

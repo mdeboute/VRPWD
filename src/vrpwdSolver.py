@@ -1,17 +1,17 @@
 import sys
-from TSPWDData import TSPWDData
+from VRPWDData import VRPWDData
 from TSPGreedy import TSPGreedy
 from TSPMIPModel import TSPMIPModel
 
 
 def print_usage():
-    print("Usage: python3 tspwdSolver.py <instance_directory> <case> <method>")
+    print("Usage: python3 vrpwdSolver.py <instance_directory> <case> <method>")
     print("Where:")
     print("<instance_directory> is the directory containing the instance files")
     print("<case> is the case of the problem to solve, can be a number in (0, 1, 2, 3)")
     print("<method> is the algorithm to use to solve the case, can be: greedy or mip")
     print("-v or --verbose is an optional argument to print all the information")
-    print("Example: python3 tspwdSolver.py data/instance_1/ 0 greedy")
+    print("Example: python3 vrpwdSolver.py data/instance_1/ 0 greedy")
 
 
 def main():
@@ -38,16 +38,21 @@ def main():
     else:
         verbose = False
 
-    data = TSPWDData(instance_dir, case, verbose)
+    data = VRPWDData(instance_dir, case, verbose)
+    data.save_map_html()
 
     if method == "greedy":
         solution = TSPGreedy(data).solve()
         solution.print_tour()
         solution.plot()
+        if solution.check():
+            solution.write()
     if method == "mip":
-        solution = TSPMIPModel(data).solve()
+        solution = TSPMIPModel(data).solve(verbose)
         solution.print_tour()
         solution.plot()
+        if solution.check():
+            solution.write()
 
 
 if __name__ == "__main__":
