@@ -48,7 +48,7 @@ def main():
         if solution.check():
             solution.write()
     if method == "mip":
-        solution = TSPMIPModel(data).solve(verbose)
+        solution = TSPMIPModel(data).solve()
         solution.print_tour()
         solution.plot()
         if solution.check():

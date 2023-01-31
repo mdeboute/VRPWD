@@ -31,12 +31,11 @@ class TSPMIPModel:
 
     def solve(
         self,
-        verbose: bool = False,
         time_limit: int = 600,
         max_gap: float = 0.00001,
         nb_threads: int = 4,
     ) -> VRPWDSolution:
-        self.model.Params.OutputFlag = int(verbose)
+        self.model.Params.OutputFlag = int(self.instance._VERBOSE)
         self.model.Params.TimeLimit = time_limit
         self.model.Params.MIPGap = max_gap
         self.model.Params.Threads = nb_threads
