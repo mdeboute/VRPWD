@@ -3,6 +3,7 @@ from gurobipy import GRB
 from itertools import combinations
 from VRPWDData import VRPWDData
 from VRPWDSolution import VRPWDSolution
+from utils import v_print
 
 
 class TSPMIPModel:
@@ -36,11 +37,12 @@ class TSPMIPModel:
         max_gap: float = 0.00001,
         nb_threads: int = 4,
     ) -> VRPWDSolution:
+        vprint = v_print(verbose)
+        vprint("==================== MIP CASE 0 RESOLUTION ====================")
         self.model.Params.OutputFlag = int(verbose)
         self.model.Params.TimeLimit = time_limit
         self.model.Params.MIPGap = max_gap
         self.model.Params.Threads = nb_threads
-
         def subtourelim(model, where):
             if where == GRB.Callback.MIPSOL:
                 # make a list of edges selected in the solution
