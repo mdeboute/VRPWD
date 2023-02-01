@@ -1,6 +1,7 @@
 import gurobipy as gp
 from gurobipy import GRB
 from itertools import combinations
+import networkx as nx
 from VRPWDData import VRPWDData
 from VRPWDSolution import VRPWDSolution
 from utils import v_print
@@ -85,9 +86,10 @@ class TSPMIPModel:
         selected = gp.tuplelist((i, j) for i, j in vals.keys() if vals[i, j] > 0.5)
         tour = subtour(selected) + [0]
 
-        solution = [self.instance.dpd_nodes[j] for j in tour]
-
+        solution = self._create_solution(tour)
+        obj_value = solution["truck"][len(solution["truck"])-1][2]
         _runtime = self.model.Runtime
+
 
         # Get solution
         if self.model.Status == GRB.OPTIMAL:
@@ -97,7 +99,7 @@ class TSPMIPModel:
             return VRPWDSolution(
                 self.instance,
                 self.__algorithm,
-                int(self.model.ObjVal),
+                round(obj_value),
                 solution,
                 self.instance._VERBOSE,
             )
@@ -108,12 +110,34 @@ class TSPMIPModel:
             return VRPWDSolution(
                 self.instance,
                 self.__algorithm,
-                int(self.model.ObjVal),
+                round(obj_value),
                 solution,
                 self.instance._VERBOSE,
             )
         else:
             print(f"No solution found in {time_limit} seconds!")
+
+
+    def _create_solution(demand_tour):
+        _truck_solution = [self.instance.dpd_nodes[j] for j in tour]
+        time = 0
+        solution = {"truck": [], "drone_1": [], "drone_2": []}
+        for i, x in enumerate(_truck_solution[:-1]):
+            y = _truck_solution[i + 1]
+            sp = nx.shortest_path(
+                self.instance.graph, x, y, weight="travel_time", method="dijkstra"
+            )
+            # create final solution
+            for j, a in enumerate(sp[:-1]):
+                b = sp[j + 1]
+                time = time + self.instance.graph.edges[a,b]["travel_time"]
+                for vehicle in solution:
+                    vehicle.append((a,b,time))
+            time = time + 60 * self.instance.graph.nodes[y]["demand"]
+            for vehicle in solution:
+                vehicle.append((y,y,time))
+        return solution
+
 
     def __str__(self):
         return f" TSPWDMIPModel(instance={self.instance})"
