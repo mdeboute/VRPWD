@@ -41,7 +41,7 @@ class VRPWDSolution:
     def print_tour(self):
         # print the tour
         print(f"Tour (cost={self.objective_value}): ", end="")
-        for i in self.solution:
+        for i in self.tour:
             print(i, end=" ")
         print()
 

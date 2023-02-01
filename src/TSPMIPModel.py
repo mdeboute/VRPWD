@@ -32,7 +32,6 @@ class TSPMIPModel:
 
     def solve(
         self,
-        verbose: bool = False,
         time_limit: int = 600,
         max_gap: float = 0.00001,
         nb_threads: int = 4,
