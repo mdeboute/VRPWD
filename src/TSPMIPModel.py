@@ -25,7 +25,8 @@ def create_solution(instance: VRPWDData, tour: list) -> dict:
                 vehicle_route.append((a, b, time))
         time = time + 60 * instance.graph.nodes[y]["demand"]
     for vehicle_route in routes:
-        vehicle_route.append((y, y, time))
+        if vehicle_route and vehicle_route[-1][0] == vehicle_route[-1][1]:
+            vehicle_route.pop()
     return solution
 
 

@@ -91,7 +91,7 @@ class VRPWDData(object):
         processing_time = end_time - start_time
         vprint(gdf_nodes)
         vprint(gdf_edges)
-        vprint("processing_time = ", processing_time)
+        vprint("processing_time:", processing_time)
         return gdf_nodes, gdf_edges
 
     def _create_graph(self):
@@ -149,8 +149,8 @@ class VRPWDData(object):
         self.deposit = nearest_node
         end_time = time.time()
         processing_time = end_time - start_time
-        vprint("graph = ", graph)
-        vprint("processing_time = ", processing_time)
+        vprint("graph:", graph)
+        vprint("processing_time:", processing_time)
         return graph
 
     def _create_dpd_time_matrix(self):
@@ -165,16 +165,16 @@ class VRPWDData(object):
         for node in self.graph.nodes():
             if self.graph.nodes[node]["demand"] > 0:
                 demands_nodes.append(node)
-        vprint("deposit = ", self.deposit)
+        vprint("deposit:", self.deposit)
         # add deposit to the list of demand_nodes in order to calculate travel_time between demand nodes and deposit
         # add it at the beginning of the list
         demands_nodes.insert(0, self.deposit)
         self.dpd_nodes = demands_nodes
-        vprint("dpd_nodes = ", self.dpd_nodes)
+        vprint("dpd_nodes:", self.dpd_nodes)
 
         # create empty matrix
         matrix = np.zeros(shape=(len(demands_nodes), len(demands_nodes)), dtype=float)
-        vprint("matrix_shape = ", matrix.shape)
+        vprint("matrix_shape:", matrix.shape)
         # pre-compute shortest paths
         shortest_paths = dict(
             nx.all_pairs_dijkstra_path_length(self.graph, weight="travel_time")
@@ -187,7 +187,7 @@ class VRPWDData(object):
                     matrix[j][i] = matrix[i][j]
         end_time = time.time()
         processing_time = end_time - start_time
-        vprint("processing_time = ", processing_time)
+        vprint("processing_time:", processing_time)
         return matrix
 
     def _create_drone_matrix(self, drone_speed):
@@ -198,7 +198,7 @@ class VRPWDData(object):
         # create matrix of dimension NxN with N the number of nodes in the graph
         number_of_nodes = self.graph.number_of_nodes()
         matrix = np.zeros(shape=(number_of_nodes, number_of_nodes), dtype=float)
-        vprint("matrix shape = ", matrix.shape)
+        vprint("matrix shape:", matrix.shape)
         # precompute coordinates inversed
         coordinates = {
             node: (
@@ -224,7 +224,7 @@ class VRPWDData(object):
                         matrix[other_node - 1][current_node - 1] = travel_time
         end_time = time.time()
         processing_time = end_time - start_time
-        vprint("processing_time = ", processing_time)
+        vprint("processing_time:", processing_time)
         return matrix
 
     def save_map_html(self):
