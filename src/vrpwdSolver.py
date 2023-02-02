@@ -43,13 +43,11 @@ def main():
 
     if method == "greedy":
         solution = TSPGreedy(data).solve()
-        # print(solution.solution)
         if solution.check():
             solution.write()
             solution.plot()
     if method == "mip":
         solution = TSPMIPModel(data).solve()
-        # print(solution.solution)
         if solution.check():
             solution.write()
             solution.plot()
