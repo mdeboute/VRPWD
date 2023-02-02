@@ -11,6 +11,7 @@ def create_solution(instance: VRPWDData, tour: list) -> dict:
     _truck_solution = [instance.dpd_nodes[j] for j in tour]
     time = 0
     solution = {"truck": [], "drone_1": [], "drone_2": []}
+    routes = [route for _, route in solution.items()]
     for i, x in enumerate(_truck_solution[:-1]):
         y = _truck_solution[i + 1]
         sp = nx.shortest_path(
@@ -20,10 +21,10 @@ def create_solution(instance: VRPWDData, tour: list) -> dict:
         for j, a in enumerate(sp[:-1]):
             b = sp[j + 1]
             time = time + instance.graph.edges[a, b]["travel_time"]
-            for _, vehicle_route in solution.items():
+            for vehicle_route in routes:
                 vehicle_route.append((a, b, time))
         time = time + 60 * instance.graph.nodes[y]["demand"]
-    for _, vehicle_route in solution.items():
+    for vehicle_route in routes:
         vehicle_route.append((y, y, time))
     return solution
 

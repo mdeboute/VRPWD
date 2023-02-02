@@ -25,7 +25,6 @@ class VRPWDSolution:
         self.objective_value = objective_value
         self.solution = solution
         self.graph = self._create_graph()
-        self.tour = self._create_tour()
 
         self.__SOLUTION_DIR = (
             str(self.__BASE_DIR) + "/solution/" + self.instance._INSTANCE_NAME + "/"
@@ -37,13 +36,7 @@ class VRPWDSolution:
     def __repr__(self):
         return self.__str__()
 
-    def print_tour(self):
-        print(self.solution)
-
     def _create_graph(self):
-        pass
-
-    def _create_tour(self):
         pass
 
     def plot(self):
