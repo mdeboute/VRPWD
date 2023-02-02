@@ -37,6 +37,7 @@ class TSPMIPModel:
         max_gap: float = 0.00001,
         nb_threads: int = 4,
     ) -> VRPWDSolution:
+        verbose = self.instance._VERBOSE
         vprint = v_print(verbose)
         vprint("==================== MIP CASE 0 RESOLUTION ====================")
         self.model.Params.OutputFlag = int(verbose)
@@ -118,8 +119,8 @@ class TSPMIPModel:
             print(f"No solution found in {time_limit} seconds!")
 
 
-    def _create_solution(demand_tour):
-        _truck_solution = [self.instance.dpd_nodes[j] for j in tour]
+    def _create_solution(self, demand_tour):
+        _truck_solution = [self.instance.dpd_nodes[j] for j in demand_tour]
         time = 0
         solution = {"truck": [], "drone_1": [], "drone_2": []}
         for i, x in enumerate(_truck_solution[:-1]):
@@ -132,10 +133,10 @@ class TSPMIPModel:
                 b = sp[j + 1]
                 time = time + self.instance.graph.edges[a,b]["travel_time"]
                 for vehicle in solution:
-                    vehicle.append((a,b,time))
+                    solution[vehicle].append((a,b,time))
             time = time + 60 * self.instance.graph.nodes[y]["demand"]
             for vehicle in solution:
-                vehicle.append((y,y,time))
+                solution[vehicle].append((y,y,time))
         return solution
 
 
