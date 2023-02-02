@@ -140,6 +140,8 @@ class VRPWDSolution:
         return True
 
     def write(self):
+        # with our solution format, we assume that the delivery guy left the demand node just after arriving
+        # and that he arrived at the next node at time: delivery_time + travel_time
         Path(self.__SOLUTION_DIR).mkdir(parents=True, exist_ok=True)
         _sol_file = self.__SOLUTION_DIR + self.algorithm + "_result.txt"
 
@@ -148,7 +150,20 @@ class VRPWDSolution:
         drone_2_shift = list(self.solution["drone_2"])
         coords = nx.get_node_attributes(self.graph, "coordinates")
 
-        # with open(_sol_file, "w") as f:
-        #     f.write("TEMPS ; EVENEMENT ; LOCALISATION")
-
-        pass
+        with open(_sol_file, "w") as f:
+            f.write("TEMPS ; EVENEMENT ; LOCALISATION\n")
+            current_time = 0
+            if self.instance._CASE == 0:
+                for move in truck_shift:
+                    f.write(
+                        f"{current_time} ; DEPLACEMENT VEHICULE DESTINATION (LAT : {coords[move[0]][0]} ; LON : {coords[move[0]][1]}) ; (LAT : {coords[move[1]][0]} ; LON : {coords[move[1]][1]})\n"
+                    )
+                    current_time = move[2]
+                    f.write(
+                        f"{current_time} ; ARRIVEE VEHICULE ; (LAT : {coords[move[1]][0]} ; LON : {coords[move[1]][1]})\n"
+                    )
+                    if move[1] in self.instance.dpd_nodes[1:]:
+                        f.write(
+                            f"{current_time} ; LIVRAISON COLIS ID : {move[1]} ; (LAT : {coords[move[1]][0]} ; LON : {coords[move[1]][1]})\n"
+                        )
+        print(f"Solution written in {_sol_file}")
