@@ -1,7 +1,6 @@
 import pandas as pd
 import geopandas as gpd
 import numpy as np
-import matplotlib.pyplot as plt
 import time
 import networkx as nx
 import folium
@@ -9,20 +8,21 @@ import folium
 from geopy.distance import geodesic
 from pathlib import Path
 from scipy.spatial import cKDTree
-from utils import v_print
+from utils import verbose_print
 
 
 class VRPWDData(object):
     """This class is used to store the instance information"""
 
     def __init__(self, instance_dir: str, case: int, verbose: bool):
-        self._INSTANCE_NAME = instance_dir.split("/")[-1]
         self.__MAP_PATH = Path(instance_dir).joinpath("map.json")
         self.__DEMANDS_PATH = Path(instance_dir).joinpath("demands.json")
+
+        self._INSTANCE_NAME = instance_dir.split("/")[-1]
         self._CASE = case
         self._VERBOSE = verbose
         global vprint
-        vprint = v_print(self._VERBOSE)
+        vprint = verbose_print(self._VERBOSE)
 
         self.__brut_df_map = pd.read_json(self.__MAP_PATH)
         self.__brut_df_demands = pd.read_json(self.__DEMANDS_PATH)
@@ -227,26 +227,9 @@ class VRPWDData(object):
         vprint("processing_time = ", processing_time)
         return matrix
 
-    def plot_graph(self):
-        """plot the graph"""
-        vprint("==================== PLOT GRAPH ====================")
-        # Draw graph
-        coordinates = nx.get_node_attributes(self.graph, "coordinates")
-        node_colors = []
-        count = 0
-        for node in self.graph.nodes():
-            if self.graph.nodes[node]["demand"] > 0:
-                node_colors.append("r")
-                count += 1
-            else:
-                node_colors.append("b")
-        nx.draw(self.graph, coordinates, node_color=node_colors, with_labels=True)
-        # Show plot
-        vprint("number_of_demand_nodes = ", count)
-        plt.show()
-
     def save_map_html(self):
-        """plot the nodes on a interactive html map"""
+        """Plot the nodes on a interactive html map"""
+
         list_coords = []
         # Create map
         m = folium.Map(location=[44.838633, 0.540983], zoom_start=13)

@@ -1,5 +1,5 @@
-def v_print(v: bool):
-    if v:
+def verbose_print(verbose: bool):
+    if verbose:
 
         def _vprint(*args, **kwargs):
             print(*args, **kwargs)

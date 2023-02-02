@@ -1,10 +1,31 @@
 import gurobipy as gp
+import networkx as nx
+
 from gurobipy import GRB
 from itertools import combinations
-import networkx as nx
 from VRPWDData import VRPWDData
 from VRPWDSolution import VRPWDSolution
-from utils import v_print
+
+
+def create_solution(instance: VRPWDData, tour: list) -> dict:
+    _truck_solution = [instance.dpd_nodes[j] for j in tour]
+    time = 0
+    solution = {"truck": [], "drone_1": [], "drone_2": []}
+    for i, x in enumerate(_truck_solution[:-1]):
+        y = _truck_solution[i + 1]
+        sp = nx.shortest_path(
+            instance.graph, x, y, weight="travel_time", method="dijkstra"
+        )
+        # create final solution
+        for j, a in enumerate(sp[:-1]):
+            b = sp[j + 1]
+            time = time + instance.graph.edges[a, b]["travel_time"]
+            for _, vehicle_route in solution.items():
+                vehicle_route.append((a, b, time))
+        time = time + 60 * instance.graph.nodes[y]["demand"]
+    for _, vehicle_route in solution.items():
+        vehicle_route.append((y, y, time))
+    return solution
 
 
 class TSPMIPModel:
@@ -37,12 +58,11 @@ class TSPMIPModel:
         max_gap: float = 0.00001,
         nb_threads: int = 4,
     ) -> VRPWDSolution:
-        vprint = v_print(verbose)
-        vprint("==================== MIP CASE 0 RESOLUTION ====================")
-        self.model.Params.OutputFlag = int(verbose)
+        self.model.Params.OutputFlag = int(self.instance._VERBOSE)
         self.model.Params.TimeLimit = time_limit
         self.model.Params.MIPGap = max_gap
         self.model.Params.Threads = nb_threads
+
         def subtourelim(model, where):
             if where == GRB.Callback.MIPSOL:
                 # make a list of edges selected in the solution
@@ -86,15 +106,14 @@ class TSPMIPModel:
         selected = gp.tuplelist((i, j) for i, j in vals.keys() if vals[i, j] > 0.5)
         tour = subtour(selected) + [0]
 
-        solution = self._create_solution(tour)
-        obj_value = solution["truck"][len(solution["truck"])-1][2]
-        _runtime = self.model.Runtime
-
+        solution = create_solution(self.instance, tour)
+        obj_value = solution["truck"][-1][-1]
+        runtime = self.model.Runtime
 
         # Get solution
         if self.model.Status == GRB.OPTIMAL:
             print(
-                f"Optimal Result: runtime={_runtime:.2f}sec; objective={int(self.model.ObjVal)}; gap={self.model.MIPGap:.4f}%"
+                f"Optimal Result: runtime={runtime:.2f}sec; objective={obj_value}; gap={self.model.MIPGap:.4f}%"
             )
             return VRPWDSolution(
                 self.instance,
@@ -105,7 +124,7 @@ class TSPMIPModel:
             )
         elif self.model.Status == GRB.FEASIBLE:
             print(
-                f"Result: runtime={_runtime:.2f}sec; objective={int(self.model.ObjVal)}; gap={100*self.model.MIPGap:.4f}%"
+                f"Result: runtime={runtime:.2f}sec; objective={obj_value}; gap={100*self.model.MIPGap:.4f}%"
             )
             return VRPWDSolution(
                 self.instance,
@@ -116,28 +135,6 @@ class TSPMIPModel:
             )
         else:
             print(f"No solution found in {time_limit} seconds!")
-
-
-    def _create_solution(demand_tour):
-        _truck_solution = [self.instance.dpd_nodes[j] for j in tour]
-        time = 0
-        solution = {"truck": [], "drone_1": [], "drone_2": []}
-        for i, x in enumerate(_truck_solution[:-1]):
-            y = _truck_solution[i + 1]
-            sp = nx.shortest_path(
-                self.instance.graph, x, y, weight="travel_time", method="dijkstra"
-            )
-            # create final solution
-            for j, a in enumerate(sp[:-1]):
-                b = sp[j + 1]
-                time = time + self.instance.graph.edges[a,b]["travel_time"]
-                for vehicle in solution:
-                    vehicle.append((a,b,time))
-            time = time + 60 * self.instance.graph.nodes[y]["demand"]
-            for vehicle in solution:
-                vehicle.append((y,y,time))
-        return solution
-
 
     def __str__(self):
         return f" TSPWDMIPModel(instance={self.instance})"
