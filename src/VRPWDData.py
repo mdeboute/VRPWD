@@ -199,33 +199,28 @@ class VRPWDData(object):
 
         vprint("================ CREATE DRONE MATRIX ================")
         start_time = time.time()
-
         number_of_nodes = self.graph.number_of_nodes()
         matrix = np.zeros(shape=(number_of_nodes, number_of_nodes), dtype=float)
-        vprint("matrix shape:", matrix.shape)
-
-        coordinates = [
-            (
+        vprint("matrix_shape:", matrix.shape)
+        coordinates = {
+            node: (
                 self.graph.nodes[node]["coordinates"][1],
                 self.graph.nodes[node]["coordinates"][0],
             )
             for node in self.graph.nodes
-        ]
-
-        m_per_s_drone_speed = drone_speed / 3.6
-        travel_time_dict = {}
+        }
+        nodes = list(self.graph.nodes)
         for i in range(number_of_nodes):
+            current_node = nodes[i]
+            current_node_coord = coordinates[current_node]
             for j in range(i + 1, number_of_nodes):
-                if j not in travel_time_dict:
-                    dist = geodesic(coordinates[i], coordinates[j]).m
-                    travel_time = round(dist / m_per_s_drone_speed, 3)
-                    travel_time_dict[j] = travel_time
-                    matrix[i][j] = travel_time
-                    matrix[j][i] = travel_time
-                else:
-                    matrix[i][j] = travel_time_dict[j]
-                    matrix[j][i] = travel_time_dict[j]
-
+                other_node = nodes[j]
+                other_node_coord = coordinates[other_node]
+                dist = geodesic(current_node_coord, other_node_coord).m
+                m_per_s_drone_speed = drone_speed / 3.6
+                travel_time = round(dist / m_per_s_drone_speed, 3)
+                matrix[current_node - 1][other_node - 1] = travel_time
+                matrix[other_node - 1][current_node - 1] = travel_time
         end_time = time.time()
         processing_time = end_time - start_time
         vprint("processing_time:", processing_time)

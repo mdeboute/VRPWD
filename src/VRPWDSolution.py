@@ -56,7 +56,7 @@ class VRPWDSolution:
         for node in self.instance.dpd_nodes[1:]:
             demand_value = self.instance.graph.nodes[node]["demand"]
             coords = self.instance.graph.nodes[node]["coordinates"]
-            inversed_coords = (coords[1], coords[0])
+            inversed_coords = (coords[1], coords[0])  # another networkx curiosity 0_0??
             graph.add_node(
                 node, coordinates=inversed_coords, deposit=False, demand=demand_value
             )
@@ -146,7 +146,7 @@ class VRPWDSolution:
                 round(self.graph.nodes[node]["coordinates"][1], 7),
                 round(self.graph.nodes[node]["coordinates"][0], 7),
             )
-            nn = ox.nearest_nodes(init_graph, coords_sol[1], coords_sol[0]) #lon,lat
+            nn = ox.nearest_nodes(init_graph, coords_sol[1], coords_sol[0])  # lon,lat
             list_nodes.append(nn)
         # create the subgraph
         subgraph = init_graph.subgraph(list_nodes)

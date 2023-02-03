@@ -53,7 +53,7 @@ def main():
             solution = TSPGreedy(data).solve()
             if solution.check():
                 solution.write()
-                solution.save_html()
+                # solution.save_html()
                 if plot:
                     solution.plot()
 
@@ -61,14 +61,14 @@ def main():
             solution = TSPMIPModel(data).solve()
             if solution.check():
                 solution.write()
-                solution.save_html()
+                # solution.save_html()
                 if plot:
                     solution.plot()
 
     elif case == 1:
         if method == "mip":
             solution = VRPWDMIPModel_1(data).solve()
-            # fixing subtours elimination before building a complete solution and checking it
+            # TODO: fix subtours elimination before building a complete solution and checking it
     else:
         print("Case not implemented yet!")
         sys.exit(1)

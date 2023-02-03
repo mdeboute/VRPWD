@@ -173,7 +173,7 @@ class VRPWDMIPModel_1:
                     visited.append(current)
                     if current in mustvisit:
                         mustvisit.remove(current)
-                    for (i, j) in drone_covered:
+                    for i, j in drone_covered:
                         if i == current:
                             thiscycle.append(j)
                             visited.append(j)
@@ -207,7 +207,7 @@ class VRPWDMIPModel_1:
                     visited.append(current)
                     if current in mustvisit:
                         mustvisit.remove(current)
-                    for (i, j) in drone_covered:
+                    for i, j in drone_covered:
                         if i == current:
                             thiscycle.append(j)
                             visited.append(j)
