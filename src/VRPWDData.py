@@ -105,7 +105,7 @@ class VRPWDData(object):
             lon = row["lon"]
             coord = (lat, lon)
             d = row["demand"]
-            graph.add_node(idx + 1, coordinates=coord, demand=d)
+            graph.add_node(idx + 1, coordinates=coord, deposit=False, demand=d)
         # add edges
         for idx, row in self.__gdf_edges.iterrows():
             src = row["src"]
@@ -146,7 +146,10 @@ class VRPWDData(object):
         _, nearest_node = tree.query(deposit_gps)
         nearest_node = nearest_node + 1
         # update the deposit
+        #in the Data object
         self.deposit = nearest_node
+        #in the graph
+        graph.nodes[self.deposit].update({"deposit": True})
         end_time = time.time()
         processing_time = end_time - start_time
         vprint("graph:", graph)
@@ -234,15 +237,19 @@ class VRPWDData(object):
         # Create map
         m = folium.Map(location=[44.838633, 0.540983], zoom_start=13)
         # Add points to the map according to the demand
-        for _, row in self.__gdf_nodes.iterrows():
-            coord = (row["lat"], row["lon"])
-            list_coords.append(coord)
-            if row["demand"] > 0:
-                folium.Marker(coord, icon=folium.Icon(color="red")).add_to(m)
+        for node in self.graph.nodes():
+            coord = self.graph.nodes[node]["coordinates"]
+            if self.graph.nodes[node]["deposit"]:
+                folium.Marker(
+                    coord,
+                    popup="Deposit",
+                    icon=folium.Icon(color="green")
+                    ).add_to(m)
+            elif self.graph.nodes[node]["demand"] > 0:
                 # add the demand value as a popup
                 folium.Marker(
                     coord,
-                    popup=f"Demand: {row['demand']}",
+                    popup="Demand: {}".format(self.graph.nodes[node]["demand"]),
                     icon=folium.Icon(color="red"),
                 ).add_to(m)
             else:
