@@ -2,6 +2,7 @@ import sys
 from VRPWDData import VRPWDData
 from TSPGreedy import TSPGreedy
 from TSPMIPModel import TSPMIPModel
+from VRPWDMIPModel1 import VRPWDMIPModel1
 
 
 def print_usage():
@@ -41,18 +42,24 @@ def main():
     data = VRPWDData(instance_dir, case, verbose)
     data.save_map_html()
 
-    if method == "greedy":
+    if method == "greedy" and case == 0:
         solution = TSPGreedy(data).solve()
         solution.print_tour()
         solution.plot()
         if solution.check():
             solution.write()
-    if method == "mip":
+    if method == "mip" and case == 0:
         solution = TSPMIPModel(data).solve()
         solution.print_tour()
         solution.plot()
         if solution.check():
             solution.write()
+    if method == "mip" and case == 1:
+        solution = VRPWDMIPModel1(data).solve()
+        #solution.print_tour()
+        #solution.plot()
+        #if solution.check():
+        #    solution.write()
 
 
 if __name__ == "__main__":
