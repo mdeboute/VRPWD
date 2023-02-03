@@ -210,4 +210,5 @@ class VRPWDSolution:
                         f.write(
                             f"{current_time} ; LIVRAISON COLIS ID : {move[1]} ; (LAT : {coords[move[1]][0]} ; LON : {coords[move[1]][1]})\n"
                         )
+                        current_time = move[2] + 60
         print(f"Solution written in {_sol_file}")

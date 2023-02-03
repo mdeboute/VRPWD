@@ -2,6 +2,7 @@ import sys
 from VRPWDData import VRPWDData
 from TSPGreedy import TSPGreedy
 from TSPMIPModel import TSPMIPModel
+from VRPWDMIPModel_1 import VRPWDMIPModel_1
 
 
 def print_usage():
@@ -62,7 +63,10 @@ def main():
                 solution.write()
                 if plot:
                     solution.plot()
-                    solution.plot_html()
+    elif case == 1:
+        if method == "mip":
+            solution = VRPWDMIPModel_1(data).solve()
+            # fixing subtours elimination before building a complete solution and checking it
     else:
         print("Case not implemented yet!")
         sys.exit(1)

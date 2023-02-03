@@ -5,9 +5,9 @@ import time
 import networkx as nx
 import folium
 
-from geopy.distance import geodesic
 from pathlib import Path
 from scipy.spatial import cKDTree
+from geopy.distance import geodesic
 from utils import verbose_print
 
 
@@ -146,9 +146,9 @@ class VRPWDData(object):
         _, nearest_node = tree.query(deposit_gps)
         nearest_node = nearest_node + 1
         # update the deposit
-        #in the Data object
+        # in the Data object
         self.deposit = nearest_node
-        #in the graph
+        # in the graph
         graph.nodes[self.deposit].update({"deposit": True})
         end_time = time.time()
         processing_time = end_time - start_time
@@ -163,11 +163,10 @@ class VRPWDData(object):
 
         vprint("================== CREATE TIME MATRIX ==================")
         start_time = time.time()
-        demands_nodes = []
-        # get demand nodes
-        for node in self.graph.nodes():
-            if self.graph.nodes[node]["demand"] > 0:
-                demands_nodes.append(node)
+
+        demands_nodes = [
+            node for node in self.graph.nodes() if self.graph.nodes[node]["demand"] > 0
+        ]
         vprint("deposit:", self.deposit)
         # add deposit to the list of demand_nodes in order to calculate travel_time between demand nodes and deposit
         # add it at the beginning of the list
@@ -182,15 +181,17 @@ class VRPWDData(object):
         shortest_paths = dict(
             nx.all_pairs_dijkstra_path_length(self.graph, weight="travel_time")
         )
-        # fill matrix
-        for i, current_node in enumerate(demands_nodes):
-            for j, other_node in enumerate(demands_nodes):
-                if i != j:
-                    matrix[i][j] = round(shortest_paths[current_node][other_node], 3)
-                    matrix[j][i] = matrix[i][j]
+        # fill matrix using list comprehension
+        matrix[np.arange(len(demands_nodes)), np.arange(len(demands_nodes))] = 0
+        for i in range(len(demands_nodes)):
+            for j in range(i + 1, len(demands_nodes)):
+                matrix[i][j] = matrix[j][i] = round(
+                    shortest_paths[demands_nodes[i]][demands_nodes[j]], 3
+                )
         end_time = time.time()
         processing_time = end_time - start_time
         vprint("processing_time:", processing_time)
+        vprint("matrix:", matrix)
         return matrix
 
     def _create_drone_matrix(self, drone_speed):
@@ -198,36 +199,37 @@ class VRPWDData(object):
 
         vprint("================ CREATE DRONE MATRIX ================")
         start_time = time.time()
-        # create matrix of dimension NxN with N the number of nodes in the graph
+
         number_of_nodes = self.graph.number_of_nodes()
         matrix = np.zeros(shape=(number_of_nodes, number_of_nodes), dtype=float)
         vprint("matrix shape:", matrix.shape)
-        # precompute coordinates inversed
-        coordinates = {
-            node: (
+
+        coordinates = [
+            (
                 self.graph.nodes[node]["coordinates"][1],
                 self.graph.nodes[node]["coordinates"][0],
             )
             for node in self.graph.nodes
-        }
+        ]
 
-        # loop over nodes to calculate travel time between current node and others nodes
-        for current_node in self.graph.nodes:
-            for other_node in self.graph.nodes:
-                if current_node != other_node:
-                    if matrix[current_node - 1][other_node - 1] == 0:
-                        # get coordinates for both nodes
-                        current_node_coord = coordinates[current_node]
-                        other_node_coord = coordinates[other_node]
-                        dist = geodesic(current_node_coord, other_node_coord).m
-                        # calculate travel time
-                        m_per_s_drone_speed = drone_speed / 3.6
-                        travel_time = round(dist / m_per_s_drone_speed, 3)
-                        matrix[current_node - 1][other_node - 1] = travel_time
-                        matrix[other_node - 1][current_node - 1] = travel_time
+        m_per_s_drone_speed = drone_speed / 3.6
+        travel_time_dict = {}
+        for i in range(number_of_nodes):
+            for j in range(i + 1, number_of_nodes):
+                if j not in travel_time_dict:
+                    dist = geodesic(coordinates[i], coordinates[j]).m
+                    travel_time = round(dist / m_per_s_drone_speed, 3)
+                    travel_time_dict[j] = travel_time
+                    matrix[i][j] = travel_time
+                    matrix[j][i] = travel_time
+                else:
+                    matrix[i][j] = travel_time_dict[j]
+                    matrix[j][i] = travel_time_dict[j]
+
         end_time = time.time()
         processing_time = end_time - start_time
         vprint("processing_time:", processing_time)
+        vprint("matrix:", matrix)
         return matrix
 
     def save_map_html(self):
@@ -241,10 +243,8 @@ class VRPWDData(object):
             coord = self.graph.nodes[node]["coordinates"]
             if self.graph.nodes[node]["deposit"]:
                 folium.Marker(
-                    coord,
-                    popup="Deposit",
-                    icon=folium.Icon(color="green")
-                    ).add_to(m)
+                    coord, popup="Deposit", icon=folium.Icon(color="green")
+                ).add_to(m)
             elif self.graph.nodes[node]["demand"] > 0:
                 # add the demand value as a popup
                 folium.Marker(
