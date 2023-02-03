@@ -56,13 +56,18 @@ class VRPWDSolution:
         for node in self.instance.dpd_nodes[1:]:
             demand_value = self.instance.graph.nodes[node]["demand"]
             coords = self.instance.graph.nodes[node]["coordinates"]
-            inversed_coords=(coords[1],coords[0])
-            graph.add_node(node, coordinates=inversed_coords, deposit=False, demand=demand_value)
+            inversed_coords = (coords[1], coords[0])
+            graph.add_node(
+                node, coordinates=inversed_coords, deposit=False, demand=demand_value
+            )
         # add deposit node
         graph_coords_deposit = self.instance.graph.nodes[self.instance.deposit][
             "coordinates"
         ]
-        inversed_graph_coords_deposit=(graph_coords_deposit[1],graph_coords_deposit[0])
+        inversed_graph_coords_deposit = (
+            graph_coords_deposit[1],
+            graph_coords_deposit[0],
+        )
         graph.add_node(
             self.instance.deposit,
             coordinates=inversed_graph_coords_deposit,
@@ -80,7 +85,7 @@ class VRPWDSolution:
                     # by construction, this node is not the deposit nor a demand node
                     # create the node
                     dest_coords = self.instance.graph.nodes[dest]["coordinates"]
-                    inversed_dest_coords=(dest_coords[1],dest_coords[0])
+                    inversed_dest_coords = (dest_coords[1], dest_coords[0])
                     graph.add_node(
                         dest, coordinates=inversed_dest_coords, deposit=False, demand=0
                     )
@@ -120,43 +125,41 @@ class VRPWDSolution:
         # Show plot
         plt.show()
 
-    def plot_html(self):
-        """plot the solution on a dynamic map"""
-        vprint("===============PLOT HTML================")
+    def save_html(self):
+        """Save the solution on a html map"""
+
+        vprint("=============== SAVE HTML ===============")
         # Coordonnées de la position centrale
-        start_time=time.time()
+        start_time = time.time()
         x, y = (44.8464, 0.5703)
-        
+
         # Créer le graphe à partir de la position centrale et une distance de 5 km
-        init_graph = ox.graph_from_point(center_point=(x, y), dist=5000, network_type='drive')
-        #creer le sous graph avec les noeuds qui nous interesse
-        #boucler sur les noeuds du graph networkx
-        count=0
-        list_nodes=[]
-        for node in self.graph.nodes():
-            #trouver le noeud correspondant dans le init graph omsnx
-            coords_sol=(round(self.graph.nodes[node]['coordinates'][1],7),round(self.graph.nodes[node]['coordinates'][0],7))
-            #print('coord nodes in solution : ({} , {})'.format(coords_sol[0],coords_sol[1]))
-            nn=ox.nearest_nodes(init_graph,coords_sol[1],coords_sol[0]) #lat,lon
-            coords_osmnx=(init_graph.nodes[nn]['y'],init_graph.nodes[nn]['x'])
-            list_nodes.append(nn)
-            #print('coord nodes in osmnx : ({} , {})'.format(coords_osmnx[0],coords_osmnx[1]))
-            if coords_sol==coords_osmnx:
-                count+=1
-        vprint('count = ',count)
-        #create the subgraph
-        subgraph=init_graph.subgraph(list_nodes)
-        vprint('subgraph : ',subgraph)
+        init_graph = ox.graph_from_point(
+            center_point=(x, y), dist=5000, network_type="drive"
+        )
+
+        # creer le sous graph avec les noeuds qui nous intéressent
+        list_nodes = []
+        for node in self.graph.nodes:
+            # trouver le noeud correspondant dans le init graph omsnx
+            coords_sol = (
+                round(self.graph.nodes[node]["coordinates"][0], 7),
+                round(self.graph.nodes[node]["coordinates"][1], 7),
+            )
+            nn = ox.nearest_nodes(init_graph, coords_sol[0], coords_sol[1])
+            list_nodes.extend(nn)
+        # create the subgraph
+        subgraph = init_graph.subgraph(list_nodes)
+
         # Afficher le sous graphe
-        m=ox.folium.plot_graph_folium(subgraph)
-        #save the map
+        m = ox.folium.plot_graph_folium(subgraph)
+        # save the map
         Path(self.__SOLUTION_DIR).mkdir(parents=True, exist_ok=True)
         m.save(self.__SOLUTION_DIR + "/solution.html")
         vprint("HTML Map saved in {} ".format(self.__SOLUTION_DIR + "/solution.html"))
-        end_time=time.time()
-        processing_time= end_time-start_time
-        vprint("processing time : ",processing_time)
-
+        end_time = time.time()
+        processing_time = end_time - start_time
+        vprint("processing time: ", processing_time)
 
     def check(self):
         if self.instance._CASE == 0:

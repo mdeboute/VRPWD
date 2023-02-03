@@ -128,13 +128,15 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-assets/
-
 # Visual studio
 .vs/
 
 # Output directory
 solution/
+assets/
+cache/
 
 # Personal draft
 draft/
+
+

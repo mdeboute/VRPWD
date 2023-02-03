@@ -53,16 +53,18 @@ def main():
             solution = TSPGreedy(data).solve()
             if solution.check():
                 solution.write()
+                solution.save_html()
                 if plot:
                     solution.plot()
-                    solution.plot_html()
+
         if method == "mip":
             solution = TSPMIPModel(data).solve()
             if solution.check():
                 solution.write()
+                solution.save_html()
                 if plot:
                     solution.plot()
-                    solution.plot_html()
+
     elif case == 1:
         if method == "mip":
             solution = VRPWDMIPModel_1(data).solve()
