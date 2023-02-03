@@ -45,6 +45,7 @@ def main():
         plot = False
 
     data = VRPWDData(instance_dir, case, verbose)
+    data.plot()
     data.save_map_html()
 
     if case == 0:
@@ -54,12 +55,14 @@ def main():
                 solution.write()
                 if plot:
                     solution.plot()
+                    solution.plot_html()
         if method == "mip":
             solution = TSPMIPModel(data).solve()
             if solution.check():
                 solution.write()
                 if plot:
                     solution.plot()
+                    solution.plot_html()
     else:
         print("Case not implemented yet!")
         sys.exit(1)
