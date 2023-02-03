@@ -46,7 +46,6 @@ def main():
         plot = False
 
     data = VRPWDData(instance_dir, case, verbose)
-    data.plot()
     data.save_map_html()
 
     if case == 0:
@@ -63,6 +62,7 @@ def main():
                 solution.write()
                 if plot:
                     solution.plot()
+                    solution.plot_html()
     elif case == 1:
         if method == "mip":
             solution = VRPWDMIPModel_1(data).solve()
