@@ -12,6 +12,7 @@ def print_usage():
     print("<case> is the case of the problem to solve, can be a number in (0, 1, 2, 3)")
     print("<method> is the algorithm to use to solve the case, can be: greedy or mip")
     print("-v or --verbose is an optional argument to print all the information")
+    print("-g or --graphic is an optional argument to plot the solution graph")
     print("Example: python3 vrpwdSolver.py data/instance_1/ 0 greedy")
 
 
@@ -39,27 +40,33 @@ def main():
     else:
         verbose = False
 
+    if "-g" in sys.argv or "--graphic" in sys.argv:
+        plot = True
+    else:
+        plot = False
+
     data = VRPWDData(instance_dir, case, verbose)
     data.save_map_html()
 
-    if method == "greedy" and case == 0:
-        solution = TSPGreedy(data).solve()
-        solution.print_tour()
-        solution.plot()
-        if solution.check():
-            solution.write()
-    if method == "mip" and case == 0:
-        solution = TSPMIPModel(data).solve()
-        solution.print_tour()
-        solution.plot()
-        if solution.check():
-            solution.write()
-    if method == "mip" and case == 1:
+    if case == 0:
+        if method == "greedy":
+            solution = TSPGreedy(data).solve()
+            if solution.check():
+                solution.write()
+                if plot:
+                    solution.plot()
+        if method == "mip":
+            solution = TSPMIPModel(data).solve()
+            if solution.check():
+                solution.write()
+                if plot:
+                    solution.plot()
+    elif case == 1 and method == "mip":
         solution = VRPWDMIPModel1(data).solve()
-        #solution.print_tour()
-        #solution.plot()
-        #if solution.check():
-        #    solution.write()
+        #fixing subtours elimination before building a complete solution and checking it
+    else:
+        print("Case not implemented yet!")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

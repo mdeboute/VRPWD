@@ -4,7 +4,7 @@ import numpy as np
 from itertools import permutations
 from VRPWDData import VRPWDData
 from VRPWDSolution import VRPWDSolution
-from utils import v_print
+from utils import verbose_print
 
 
 class VRPWDMIPModel1:
@@ -50,7 +50,7 @@ class VRPWDMIPModel1:
         nb_threads: int = 4,
     ) -> VRPWDSolution:
         verbose = self.instance._VERBOSE
-        vprint = v_print(verbose)
+        vprint = verbose_print(verbose)
         vprint("==================== MIP CASE 1 *WITH NO RECHARGE AND NO DELIVERY TIME* RESOLUTION ====================")
         self.model.Params.OutputFlag = int(verbose)
         self.model.Params.TimeLimit = time_limit

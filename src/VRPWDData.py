@@ -1,7 +1,6 @@
 import pandas as pd
 import geopandas as gpd
 import numpy as np
-import matplotlib.pyplot as plt
 import time
 import networkx as nx
 import folium
@@ -9,20 +8,21 @@ import folium
 from geopy.distance import geodesic
 from pathlib import Path
 from scipy.spatial import cKDTree
-from utils import v_print
+from utils import verbose_print
 
 
 class VRPWDData(object):
     """This class is used to store the instance information"""
 
     def __init__(self, instance_dir: str, case: int, verbose: bool):
-        self._INSTANCE_NAME = instance_dir.split("/")[-1]
         self.__MAP_PATH = Path(instance_dir).joinpath("map.json")
         self.__DEMANDS_PATH = Path(instance_dir).joinpath("demands.json")
+
+        self._INSTANCE_NAME = instance_dir.split("/")[-1]
         self._CASE = case
         self._VERBOSE = verbose
         global vprint
-        vprint = v_print(self._VERBOSE)
+        vprint = verbose_print(self._VERBOSE)
 
         self.__brut_df_map = pd.read_json(self.__MAP_PATH)
         self.__brut_df_demands = pd.read_json(self.__DEMANDS_PATH)
@@ -91,7 +91,7 @@ class VRPWDData(object):
         processing_time = end_time - start_time
         vprint(gdf_nodes)
         vprint(gdf_edges)
-        vprint("processing_time = ", processing_time)
+        vprint("processing_time:", processing_time)
         return gdf_nodes, gdf_edges
 
     def _create_graph(self):
@@ -105,7 +105,7 @@ class VRPWDData(object):
             lon = row["lon"]
             coord = (lat, lon)
             d = row["demand"]
-            graph.add_node(idx + 1, coordinates=coord, demand=d)
+            graph.add_node(idx + 1, coordinates=coord, deposit=False, demand=d)
         # add edges
         for idx, row in self.__gdf_edges.iterrows():
             src = row["src"]
@@ -146,11 +146,14 @@ class VRPWDData(object):
         _, nearest_node = tree.query(deposit_gps)
         nearest_node = nearest_node + 1
         # update the deposit
+        #in the Data object
         self.deposit = nearest_node
+        #in the graph
+        graph.nodes[self.deposit].update({"deposit": True})
         end_time = time.time()
         processing_time = end_time - start_time
-        vprint("graph = ", graph)
-        vprint("processing_time = ", processing_time)
+        vprint("graph:", graph)
+        vprint("processing_time:", processing_time)
         return graph
 
     def _create_dpd_time_matrix(self):
@@ -165,16 +168,16 @@ class VRPWDData(object):
         for node in self.graph.nodes():
             if self.graph.nodes[node]["demand"] > 0:
                 demands_nodes.append(node)
-        vprint("deposit = ", self.deposit)
+        vprint("deposit:", self.deposit)
         # add deposit to the list of demand_nodes in order to calculate travel_time between demand nodes and deposit
         # add it at the beginning of the list
         demands_nodes.insert(0, self.deposit)
         self.dpd_nodes = demands_nodes
-        vprint("dpd_nodes = ", self.dpd_nodes)
+        vprint("dpd_nodes:", self.dpd_nodes)
 
         # create empty matrix
         matrix = np.zeros(shape=(len(demands_nodes), len(demands_nodes)), dtype=float)
-        vprint("matrix_shape = ", matrix.shape)
+        vprint("matrix_shape:", matrix.shape)
         # pre-compute shortest paths
         shortest_paths = dict(
             nx.all_pairs_dijkstra_path_length(self.graph, weight="travel_time")
@@ -187,7 +190,7 @@ class VRPWDData(object):
                     matrix[j][i] = matrix[i][j]
         end_time = time.time()
         processing_time = end_time - start_time
-        vprint("processing_time = ", processing_time)
+        vprint("processing_time:", processing_time)
         return matrix
 
     def _create_drone_matrix(self, drone_speed):
@@ -198,7 +201,7 @@ class VRPWDData(object):
         # create matrix of dimension NxN with N the number of nodes in the graph
         number_of_nodes = self.graph.number_of_nodes()
         matrix = np.zeros(shape=(number_of_nodes, number_of_nodes), dtype=float)
-        vprint("matrix shape = ", matrix.shape)
+        vprint("matrix shape:", matrix.shape)
         # precompute coordinates inversed
         coordinates = {
             node: (
@@ -224,42 +227,29 @@ class VRPWDData(object):
                         matrix[other_node - 1][current_node - 1] = travel_time
         end_time = time.time()
         processing_time = end_time - start_time
-        vprint("processing_time = ", processing_time)
+        vprint("processing_time:", processing_time)
         return matrix
 
-    def plot_graph(self):
-        """plot the graph"""
-        vprint("==================== PLOT GRAPH ====================")
-        # Draw graph
-        coordinates = nx.get_node_attributes(self.graph, "coordinates")
-        node_colors = []
-        count = 0
-        for node in self.graph.nodes():
-            if self.graph.nodes[node]["demand"] > 0:
-                node_colors.append("r")
-                count += 1
-            else:
-                node_colors.append("b")
-        nx.draw(self.graph, coordinates, node_color=node_colors, with_labels=True)
-        # Show plot
-        vprint("number_of_demand_nodes = ", count)
-        plt.show()
-
     def save_map_html(self):
-        """plot the nodes on a interactive html map"""
+        """Plot the nodes on a interactive html map"""
+
         list_coords = []
         # Create map
         m = folium.Map(location=[44.838633, 0.540983], zoom_start=13)
         # Add points to the map according to the demand
-        for _, row in self.__gdf_nodes.iterrows():
-            coord = (row["lat"], row["lon"])
-            list_coords.append(coord)
-            if row["demand"] > 0:
-                folium.Marker(coord, icon=folium.Icon(color="red")).add_to(m)
+        for node in self.graph.nodes():
+            coord = self.graph.nodes[node]["coordinates"]
+            if self.graph.nodes[node]["deposit"]:
+                folium.Marker(
+                    coord,
+                    popup="Deposit",
+                    icon=folium.Icon(color="green")
+                    ).add_to(m)
+            elif self.graph.nodes[node]["demand"] > 0:
                 # add the demand value as a popup
                 folium.Marker(
                     coord,
-                    popup=f"Demand: {row['demand']}",
+                    popup="Demand: {}".format(self.graph.nodes[node]["demand"]),
                     icon=folium.Icon(color="red"),
                 ).add_to(m)
             else:
