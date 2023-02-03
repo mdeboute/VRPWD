@@ -143,11 +143,11 @@ class VRPWDSolution:
         for node in self.graph.nodes:
             # trouver le noeud correspondant dans le init graph omsnx
             coords_sol = (
-                round(self.graph.nodes[node]["coordinates"][0], 7),
                 round(self.graph.nodes[node]["coordinates"][1], 7),
+                round(self.graph.nodes[node]["coordinates"][0], 7),
             )
-            nn = ox.nearest_nodes(init_graph, coords_sol[0], coords_sol[1])
-            list_nodes.extend(nn)
+            nn = ox.nearest_nodes(init_graph, coords_sol[1], coords_sol[0]) #lon,lat
+            list_nodes.append(nn)
         # create the subgraph
         subgraph = init_graph.subgraph(list_nodes)
 
