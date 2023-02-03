@@ -92,12 +92,12 @@ class VRPWDSolution:
                 graph.add_edge(src, dest, travel_time=tt)
         # case 1,2,3 -> truck and drones
         else:
-            print("ERROR: case 1,2,3 not implemented yet!")
+            print("ERROR: sol_graph for case 1,2,3 is not implemented yet!")
             pass
         end_time = time.time()
         processing_time = end_time - start_time
-        vprint("graph: ", graph)
-        vprint("processing time: ", processing_time)
+        vprint("graph:", graph)
+        vprint("processing time:", processing_time)
         return graph
 
     def plot(self):
@@ -159,7 +159,7 @@ class VRPWDSolution:
         vprint("HTML Map saved in {} ".format(self.__SOLUTION_DIR + "/solution.html"))
         end_time = time.time()
         processing_time = end_time - start_time
-        vprint("processing time: ", processing_time)
+        vprint("processing time:", processing_time)
 
     def check(self):
         if self.instance._CASE == 0:
@@ -213,5 +213,7 @@ class VRPWDSolution:
                         f.write(
                             f"{current_time} ; LIVRAISON COLIS ID : {move[1]} ; (LAT : {coords[move[1]][0]} ; LON : {coords[move[1]][1]})\n"
                         )
-                        current_time = move[2] + 60
+                        current_time = (
+                            move[2] + 60 * self.instance.graph.nodes[move[1]]["demand"]
+                        )
         print(f"Solution written in {_sol_file}")

@@ -32,7 +32,7 @@ class VRPWDData(object):
         self.dpd_time_matrix = self._create_dpd_time_matrix()
 
         if self._CASE > 0:  # vrp
-            self.drone_matrix = self._create_drone_matrix(drone_speed=50)
+            self.drone_time_matrix = self._create_drone_time_matrix(drone_speed=50)
 
     def _create_gdfs(self):
         start_time = time.time()
@@ -194,7 +194,7 @@ class VRPWDData(object):
         vprint("matrix:", matrix)
         return matrix
 
-    def _create_drone_matrix(self, drone_speed):
+    def _create_drone_time_matrix(self, drone_speed):
         """Create the time travel matrix from the drone point of view"""
 
         vprint("================ CREATE DRONE MATRIX ================")
@@ -238,17 +238,25 @@ class VRPWDData(object):
             coord = self.graph.nodes[node]["coordinates"]
             if self.graph.nodes[node]["deposit"]:
                 folium.Marker(
-                    coord, popup="Deposit", icon=folium.Icon(color="green")
+                    coord,
+                    popup="Deposit",
+                    icon=folium.Icon(color="green"),
+                    tooltip=f"{node}",
                 ).add_to(m)
             elif self.graph.nodes[node]["demand"] > 0:
                 # add the demand value as a popup
                 folium.Marker(
                     coord,
-                    popup="Demand: {}".format(self.graph.nodes[node]["demand"]),
+                    popup=f"Demand: {int(self.graph.nodes[node]['demand'])}",
                     icon=folium.Icon(color="red"),
+                    tooltip=f"{node}",
                 ).add_to(m)
             else:
-                folium.Marker(coord, icon=folium.Icon(color="blue")).add_to(m)
+                folium.Marker(
+                    coord,
+                    icon=folium.Icon(color="blue"),
+                    tooltip=f"{node}",
+                ).add_to(m)
 
         # save the map in a html file
         _assets_path = "assets/" + self._INSTANCE_NAME

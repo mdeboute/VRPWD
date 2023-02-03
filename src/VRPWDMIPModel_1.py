@@ -22,7 +22,7 @@ class VRPWDMIPModel_1:
             for a, b in permutations([e[0], e[1]], 2)
         }
         self.drone_time = {
-            (i, j): instance.drone_matrix[i - 1][j - 1]
+            (i, j): instance.drone_time_matrix[i - 1][j - 1]
             for i, j in permutations(self.nodes, 2)
             if j in self.demand_nodes
         }

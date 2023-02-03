@@ -1,8 +1,10 @@
 import sys
+
 from VRPWDData import VRPWDData
 from TSPGreedy import TSPGreedy
 from TSPMIPModel import TSPMIPModel
 from VRPWDMIPModel_1 import VRPWDMIPModel_1
+from VRPWDHeuristic import VRPWDHeuristic
 
 
 def print_usage():
@@ -69,6 +71,9 @@ def main():
         if method == "mip":
             solution = VRPWDMIPModel_1(data).solve()
             # TODO: fix subtours elimination before building a complete solution and checking it
+
+        if method == "greedy":
+            solution = VRPWDHeuristic(data).solve()
     else:
         print("Case not implemented yet!")
         sys.exit(1)
