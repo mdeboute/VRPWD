@@ -146,9 +146,9 @@ class VRPWDData(object):
         _, nearest_node = tree.query(deposit_gps)
         nearest_node = nearest_node + 1
         # update the deposit
-        #in the Data object
+        # in the Data object
         self.deposit = nearest_node
-        #in the graph
+        # in the graph
         graph.nodes[self.deposit].update({"deposit": True})
         end_time = time.time()
         processing_time = end_time - start_time
@@ -241,10 +241,8 @@ class VRPWDData(object):
             coord = self.graph.nodes[node]["coordinates"]
             if self.graph.nodes[node]["deposit"]:
                 folium.Marker(
-                    coord,
-                    popup="Deposit",
-                    icon=folium.Icon(color="green")
-                    ).add_to(m)
+                    coord, popup="Deposit", icon=folium.Icon(color="green")
+                ).add_to(m)
             elif self.graph.nodes[node]["demand"] > 0:
                 # add the demand value as a popup
                 folium.Marker(
