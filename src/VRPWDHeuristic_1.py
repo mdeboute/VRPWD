@@ -22,12 +22,12 @@ class VRPWDHeuristic_1:
             if truck_route[i][1] in demands_nodes:
                 time_truck_move_1 = truck_route[i][-1]
                 time_truck_move_2 = truck_route[i + 1][-1]
-                time_drones_move = (
-                    2
-                    * self.instance.drone_time_matrix[truck_route[i][0]][
+                time_drones_move = 2 * (
+                    self.instance.drone_time_matrix[truck_route[i][0]][
                         truck_route[i][1]
                     ]
                     * self.instance.graph.nodes[truck_route[i][1]]["demand"]
+                    * 30
                 )
                 if truck_route[i][0] == truck_route[i + 1][1]:
                     time_truck_move_3 = 0
@@ -51,16 +51,12 @@ class VRPWDHeuristic_1:
         vprint(f"Time savings: {time_savings}")
         return time_savings
 
-    # create a function that says for each demand node that we can deliver it with the drone if we can do it
-    # because a drone has a reload time of 30s before it can deliver another package
-    # so we need to check if the time between the delivery of the package and the next delivery is greater than 30s
-    # if it is, we can deliver it with the drone
-    # if it is not, we can't deliver it with the drone
     def create_drone_moves(self, time_savings, drone_1_route, drone_2_route):
         for _tuple in time_savings:
             if self.instance.graph.nodes[_tuple[0][1]]["demand"] > 1:
                 vprint(f"Fuck you {_tuple[0][1]}!")
                 pass
+            # TODO: finish
 
     def create_trucks_moves(self, time_savings, truck_route):
         moves = []

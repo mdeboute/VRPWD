@@ -13,7 +13,9 @@ def print_usage():
     print("Where:")
     print("<instance_directory> is the directory containing the instance files")
     print("<case> is the case of the problem to solve, can be a number in (0, 1, 2, 3)")
-    print("<method> is the algorithm to use to solve the case, can be: heuristic or mip")
+    print(
+        "<method> is the algorithm to use to solve the case, can be: heuristic or mip"
+    )
     print("-v or --verbose is an optional argument to print all the information")
     print("-g or --graphic is an optional argument to plot the solution graph")
     print("Example: python3 vrpwdSolver.py data/instance_1/ 0 heuristic")
@@ -73,7 +75,7 @@ def main():
 
         if method == "heuristic":
             solution = VRPWDHeuristic_1(data).solve()
-    elif case ==2:
+    elif case == 2:
         if method == "heuristic":
             solution = VRPWDHeuristic_2(data).solve()
     else:
