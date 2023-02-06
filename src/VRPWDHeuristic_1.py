@@ -6,7 +6,7 @@ from TSPGreedy import TSPGreedy
 from TSPMIPModel import TSPMIPModel
 
 
-class VRPWDHeuristic:
+class VRPWDHeuristic_1:
     def __init__(self, instance: VRPWDData):
         self.instance = instance
         self.init_sol = TSPMIPModel(self.instance).solve()
@@ -67,7 +67,10 @@ class VRPWDHeuristic:
         sum_time_savings = 0
         for _tuple in time_savings:
             sum_time_savings += _tuple[1]
-        print("Sum of time savings: ", sum_time_savings)
+        print("Sum of time savings:", sum_time_savings)
+        # compute the percentage of time savings with the objective value
+        percentage = (sum_time_savings / self.init_sol.objective_value) * 100
+        print(f"So a decrease of {percentage:.2f}%!")
 
         # truck_route = self.init_sol.solution["truck"]
         # print(truck_route)

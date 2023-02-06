@@ -4,7 +4,7 @@ from VRPWDData import VRPWDData
 from TSPGreedy import TSPGreedy
 from TSPMIPModel import TSPMIPModel
 from VRPWDMIPModel_1 import VRPWDMIPModel_1
-from VRPWDHeuristic import VRPWDHeuristic
+from VRPWDHeuristic_1 import VRPWDHeuristic_1
 
 
 def print_usage():
@@ -55,7 +55,6 @@ def main():
             solution = TSPGreedy(data).solve()
             if solution.check():
                 solution.write()
-                # solution.save_html()
                 if plot:
                     solution.plot()
 
@@ -63,7 +62,6 @@ def main():
             solution = TSPMIPModel(data).solve()
             if solution.check():
                 solution.write()
-                # solution.save_html()
                 if plot:
                     solution.plot()
 
@@ -73,7 +71,7 @@ def main():
             # TODO: fix subtours elimination before building a complete solution and checking it
 
         if method == "greedy":
-            solution = VRPWDHeuristic(data).solve()
+            solution = VRPWDHeuristic_1(data).solve()
     else:
         print("Case not implemented yet!")
         sys.exit(1)
