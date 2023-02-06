@@ -5,6 +5,7 @@ from TSPGreedy import TSPGreedy
 from TSPMIPModel import TSPMIPModel
 from VRPWDMIPModel_1 import VRPWDMIPModel_1
 from VRPWDHeuristic_1 import VRPWDHeuristic_1
+from VRPWDHeuristic_2 import VRPWDHeuristic_2
 
 
 def print_usage():
@@ -12,10 +13,10 @@ def print_usage():
     print("Where:")
     print("<instance_directory> is the directory containing the instance files")
     print("<case> is the case of the problem to solve, can be a number in (0, 1, 2, 3)")
-    print("<method> is the algorithm to use to solve the case, can be: greedy or mip")
+    print("<method> is the algorithm to use to solve the case, can be: heuristic or mip")
     print("-v or --verbose is an optional argument to print all the information")
     print("-g or --graphic is an optional argument to plot the solution graph")
-    print("Example: python3 vrpwdSolver.py data/instance_1/ 0 greedy")
+    print("Example: python3 vrpwdSolver.py data/instance_1/ 0 heuristic")
 
 
 def main():
@@ -32,8 +33,8 @@ def main():
         sys.exit(1)
 
     method = sys.argv[3]
-    if method != "greedy" and method != "mip":
-        print("Method should be greedy or mip")
+    if method != "heuristic" and method != "mip":
+        print("Method should be heuristic or mip")
         print("Please use -h or --help to see the usage")
         sys.exit(1)
 
@@ -51,7 +52,7 @@ def main():
     data.save_map_html()
 
     if case == 0:
-        if method == "greedy":
+        if method == "heuristic":
             solution = TSPGreedy(data).solve()
             if solution.check():
                 solution.write()
@@ -70,8 +71,11 @@ def main():
             solution = VRPWDMIPModel_1(data).solve()
             # TODO: fix subtours elimination before building a complete solution and checking it
 
-        if method == "greedy":
+        if method == "heuristic":
             solution = VRPWDHeuristic_1(data).solve()
+    elif case ==2:
+        if method == "heuristic":
+            solution = VRPWDHeuristic_2(data).solve()
     else:
         print("Case not implemented yet!")
         sys.exit(1)
