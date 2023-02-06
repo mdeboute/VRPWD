@@ -2,9 +2,8 @@
 
 [Here](./projet.pdf) is the french subject of the La Poste VRP With Drones project.
 
+You'll need to have Python 3.8+ installed.
 Don't forget to do a `pip install -r requirements.txt` before running the code.
-
-If you install a new package, don't forget to add it to the `requirements.txt` file with `pip freeze > requirements.txt`.
 
 For the main program:
 
