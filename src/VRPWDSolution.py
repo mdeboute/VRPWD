@@ -1,10 +1,8 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 import time
-import osmnx as ox
-import folium
-from pathlib import Path
 
+from pathlib import Path
 from utils import verbose_print
 from VRPWDData import VRPWDData
 from pathlib import Path
@@ -125,42 +123,6 @@ class VRPWDSolution:
         # Show plot
         plt.show()
 
-    def save_html(self):
-        """Save the solution on a html map"""
-
-        vprint("=============== SAVE HTML ===============")
-        # Coordonnées de la position centrale
-        start_time = time.time()
-        x, y = (44.8464, 0.5703)
-
-        # Créer le graphe à partir de la position centrale et une distance de 5 km
-        init_graph = ox.graph_from_point(
-            center_point=(x, y), dist=5000, network_type="drive"
-        )
-
-        # creer le sous graph avec les noeuds qui nous intéressent
-        list_nodes = []
-        for node in self.graph.nodes:
-            # trouver le noeud correspondant dans le init graph omsnx
-            coords_sol = (
-                round(self.graph.nodes[node]["coordinates"][1], 7),
-                round(self.graph.nodes[node]["coordinates"][0], 7),
-            )
-            nn = ox.nearest_nodes(init_graph, coords_sol[1], coords_sol[0])  # lon,lat
-            list_nodes.append(nn)
-        # create the subgraph
-        subgraph = init_graph.subgraph(list_nodes)
-
-        # Afficher le sous graphe
-        m = ox.folium.plot_graph_folium(subgraph)
-        # save the map
-        Path(self.__SOLUTION_DIR).mkdir(parents=True, exist_ok=True)
-        m.save(self.__SOLUTION_DIR + "/solution.html")
-        vprint("HTML Map saved in {} ".format(self.__SOLUTION_DIR + "/solution.html"))
-        end_time = time.time()
-        processing_time = end_time - start_time
-        vprint("processing time:", processing_time)
-
     def check(self):
         if self.instance._CASE == 0:
             # check if all demand nodes are in the tour
@@ -192,20 +154,24 @@ class VRPWDSolution:
         Path(self.__SOLUTION_DIR).mkdir(parents=True, exist_ok=True)
         _sol_file = self.__SOLUTION_DIR + self.algorithm + "_result.txt"
 
-        truck_shift = list(self.solution["truck"])
-        drone_1_shift = list(self.solution["drone_1"])
-        drone_2_shift = list(self.solution["drone_2"])
+        truck_route = list(self.solution["truck"])
+        drone_1_route = list(self.solution["drone_1"])
+        drone_2_route = list(self.solution["drone_2"])
         coords = nx.get_node_attributes(self.graph, "coordinates")
 
         with open(_sol_file, "w") as f:
             f.write("TEMPS ; EVENEMENT ; LOCALISATION\n")
             current_time = 0
             if self.instance._CASE == 0:
-                for move in truck_shift:
+                for move in truck_route:
                     f.write(
                         f"{current_time} ; DEPLACEMENT VEHICULE DESTINATION (LAT : {coords[move[0]][0]} ; LON : {coords[move[0]][1]}) ; (LAT : {coords[move[1]][0]} ; LON : {coords[move[1]][1]})\n"
                     )
-                    current_time = move[2]
+                    current_time += move[2]
+                    if move[1] in self.instance.dpd_nodes[1:]:
+                        current_time -= (
+                            self.instance.graph.nodes[move[1]]["demand"] * 60
+                        )
                     f.write(
                         f"{current_time} ; ARRIVEE VEHICULE ; (LAT : {coords[move[1]][0]} ; LON : {coords[move[1]][1]})\n"
                     )
@@ -213,7 +179,7 @@ class VRPWDSolution:
                         f.write(
                             f"{current_time} ; LIVRAISON COLIS ID : {move[1]} ; (LAT : {coords[move[1]][0]} ; LON : {coords[move[1]][1]})\n"
                         )
-                        current_time = (
-                            move[2] + 60 * self.instance.graph.nodes[move[1]]["demand"]
+                        current_time += (
+                            self.instance.graph.nodes[move[1]]["demand"] * 60
                         )
         print(f"Solution written in {_sol_file}")

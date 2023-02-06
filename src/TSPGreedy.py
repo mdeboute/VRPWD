@@ -37,10 +37,10 @@ class TSPGreedy:
         tour.append(0)
 
         solution = create_solution(self.instance, tour)
-        obj_value = solution["truck"][-1][-1]
+        obj_value = sum(solution["truck"][i][-1] for i in range(len(solution["truck"])))
 
         end = time.time()
-        print(f"Result: runtime={end-start:.2f}sec; objective={obj_value}")
+        print(f"Result: runtime={end-start:.2f}sec; objective={obj_value:.2f}sec")
 
         # Return the solution
         return VRPWDSolution(
