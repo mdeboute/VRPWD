@@ -22,12 +22,14 @@ class VRPWDHeuristic_1:
             if truck_route[i][1] in demands_nodes:
                 time_truck_move_1 = truck_route[i][-1]
                 time_truck_move_2 = truck_route[i + 1][-1]
-                time_drones_move = 2 * (
-                    self.instance.drone_time_matrix[truck_route[i][0]][
+                time_drones_move = self.instance.graph.nodes[truck_route[i][1]][
+                    "demand"
+                ] * (
+                    2
+                    * self.instance.drone_time_matrix[truck_route[i][0]][
                         truck_route[i][1]
                     ]
-                    * self.instance.graph.nodes[truck_route[i][1]]["demand"]
-                    * 30
+                    + 30
                 )
                 if truck_route[i][0] == truck_route[i + 1][1]:
                     time_truck_move_3 = 0
