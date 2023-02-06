@@ -165,7 +165,7 @@ class VRPWDSolution:
         if self.instance._CASE == 0:
             # check if all demand nodes are in the tour
             for node in self.instance.dpd_nodes[1:]:
-                if node not in [tuple[0] for tuple in list(self.solution["truck"])]:
+                if node not in [_tuple[0] for _tuple in list(self.solution["truck"])]:
                     print(f"ERROR: demand node {node} is not in the tour!")
                     return False
             # check that we start at the deposit
@@ -177,7 +177,7 @@ class VRPWDSolution:
                 print("ERROR: tour does not end at the deposit!")
                 return False
             # check that we do not visit the deposit twice
-            if [tuple[0] for tuple in list(self.solution["truck"])].count(
+            if [_tuple[0] for _tuple in list(self.solution["truck"])].count(
                 self.instance.deposit
             ) > 2:
                 print("ERROR: tour visits the deposit twice!")
