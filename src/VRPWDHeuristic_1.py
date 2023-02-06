@@ -4,12 +4,15 @@ from VRPWDData import VRPWDData
 from VRPWDSolution import VRPWDSolution
 from TSPGreedy import TSPGreedy
 from TSPMIPModel import TSPMIPModel
+from utils import verbose_print
 
 
 class VRPWDHeuristic_1:
     def __init__(self, instance: VRPWDData):
         self.instance = instance
         self.init_sol = TSPMIPModel(self.instance).solve()
+        global vprint
+        vprint = verbose_print(self.instance._VERBOSE)
 
     def compute_time_savings(self):
         truck_route = self.init_sol.solution["truck"]
@@ -40,10 +43,24 @@ class VRPWDHeuristic_1:
                     time_drones_move + time_truck_move_3
                 )
                 if delta > 0:
-                    time_savings[(truck_route[i][0], truck_route[i + 1][1])] = delta
+                    time_savings[
+                        (truck_route[i][0], truck_route[i][1], truck_route[i + 1][1])
+                    ] = delta
         # sort time savings
         time_savings = sorted(time_savings.items(), key=lambda x: x[1], reverse=True)
+        vprint(f"Time savings: {time_savings}")
         return time_savings
+
+    # create a function that says for each demand node that we can deliver it with the drone if we can do it
+    # because a drone has a reload time of 30s before it can deliver another package
+    # so we need to check if the time between the delivery of the package and the next delivery is greater than 30s
+    # if it is, we can deliver it with the drone
+    # if it is not, we can't deliver it with the drone
+    def create_drone_moves(self, time_savings, drone_1_route, drone_2_route):
+        for _tuple in time_savings:
+            if self.instance.graph.nodes[_tuple[0][1]]["demand"] > 1:
+                vprint(f"Fuck you {_tuple[0][1]}!")
+                pass
 
     def create_trucks_moves(self, time_savings, truck_route):
         moves = []
@@ -71,6 +88,10 @@ class VRPWDHeuristic_1:
         # compute the percentage of time savings with the objective value
         percentage = (sum_time_savings / self.init_sol.objective_value) * 100
         print(f"So a decrease of {percentage:.2f}%!")
+
+        drone_1_route = self.init_sol.solution["drone_1"]
+        drone_2_route = self.init_sol.solution["drone_2"]
+        self.create_drone_moves(time_savings, drone_1_route, drone_2_route)
 
         # truck_route = self.init_sol.solution["truck"]
         # print(truck_route)
