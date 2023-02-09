@@ -75,7 +75,7 @@ def main():
             solution = VRPWDHeuristic_1(data).solve()
     elif case ==2:
         if method == "heuristic":
-            solution = VRPWDHeuristic_2(data).solve()
+            solution = VRPWDHeuristic_2(data,2).solve()
     else:
         print("Case not implemented yet!")
         sys.exit(1)
