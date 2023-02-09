@@ -10,9 +10,8 @@ from VRPWDSolution import VRPWDSolution
 def create_solution(instance: VRPWDData, tour: list) -> dict:
     truck_solution = [instance.dpd_nodes[j] for j in tour]
     solution = {"truck": [], "drone_1": [], "drone_2": []}
-    routes = [route for _, route in solution.items()]
     # create a dictionnary with the demand of each node
-    demands_nodes = {
+    node_demands = {
         node: instance.graph.nodes[node]["demand"] for node in instance.dpd_nodes[1:]
     }
     for i, x in enumerate(truck_solution[:-1]):
@@ -23,16 +22,10 @@ def create_solution(instance: VRPWDData, tour: list) -> dict:
         # create final solution
         for j, a in enumerate(sp[:-1]):
             b = sp[j + 1]
-            delivery_time = 0
-            if b in instance.dpd_nodes[1:]:
-                delivery_time = 60 * demands_nodes[b]
-                demands_nodes[b] = 0
-            time = instance.graph.edges[a, b]["travel_time"] + delivery_time
-            for vehicle_route in routes:
-                vehicle_route.append((a, b, time))
-    for vehicle_route in routes:
-        if vehicle_route and vehicle_route[-1][0] == vehicle_route[-1][1]:
-            vehicle_route.pop()
+            time = instance.graph.edges[a, b]["travel_time"]
+            solution["truck"].append((a, b, time))
+        if y in node_demands.keys():
+            solution["truck"].append((y, y, 60*node_demands[y], node_demands[y]))
     return solution
 
 
@@ -116,7 +109,7 @@ class TSPMIPModel:
 
         solution = create_solution(self.instance, tour)
         # to compute the objective value of the solution we have to sum the travel times
-        obj_value = sum(solution["truck"][i][-1] for i in range(len(solution["truck"])))
+        obj_value = sum(solution["truck"][i][2] for i in range(len(solution["truck"])))
         runtime = self.model.Runtime
 
         # Get solution
