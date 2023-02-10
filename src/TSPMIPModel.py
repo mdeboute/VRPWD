@@ -12,8 +12,10 @@ def create_solution(instance: VRPWDData, tour: list) -> dict:
     solution = {"truck": [], "drone_1": [], "drone_2": []}
     # create a dictionnary with the demand of each node
     node_demands = {
-        node: instance.graph.nodes[node]["demand"] for node in instance.dpd_nodes[1:]
+        node: instance.graph.nodes[node]["demand"] for node in instance.dpd_nodes
     }
+    # First and last tuples of truck are (depot, depot, 0, 0) to signal start and stop. Useful for heuristic
+    solution["truck"].append((truck_solution[0], truck_solution[0], 0, 0))
     for i, x in enumerate(truck_solution[:-1]):
         y = truck_solution[i + 1]
         sp = nx.shortest_path(

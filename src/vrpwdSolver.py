@@ -6,6 +6,7 @@ from TSPMIPModel import TSPMIPModel
 from VRPWDMIPModel_1 import VRPWDMIPModel_1
 from VRPWDHeuristic_1 import VRPWDHeuristic_1
 from VRPWDHeuristic_2 import VRPWDHeuristic_2
+from VRPWDPathHeuristic_2 import VRPWDPathHeuristic_2
 
 
 def print_usage():
@@ -35,7 +36,7 @@ def main():
         sys.exit(1)
 
     method = sys.argv[3]
-    if method != "heuristic" and method != "mip":
+    if method != "heuristic" and method != "mip" and method != "pathheuristic" :
         print("Method should be heuristic or mip")
         print("Please use -h or --help to see the usage")
         sys.exit(1)
@@ -78,6 +79,8 @@ def main():
     elif case == 2:
         if method == "heuristic":
             solution = VRPWDHeuristic_2(data,2).solve()
+        if method == "pathheuristic":
+            solution = VRPWDPathHeuristic_2(data).solve()
     else:
         print("Case not implemented yet!")
         sys.exit(1)
