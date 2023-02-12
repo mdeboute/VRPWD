@@ -5,12 +5,65 @@ from VRPWDSolution import VRPWDSolution
 from utils import verbose_print
 import gurobipy as gp
 from gurobipy import GRB
+import networkx as nx
 
 
 class VRPWDPathHeuristic_2:
     def __init__(self, instance: VRPWDData):
         self.instance = instance
         self.init_sol = TSPMIPModel(self.instance).solve().solution
+        # First and last tuples of truck are (depot, depot, 0, 0) to signal start and stop. Useful for heuristic
+        self.init_sol["truck"].append((instance.deposit, instance.deposit, 0.0, 0.0))
+        if self.init_sol["truck"][0][0] != self.init_sol["truck"][0][1]:
+            self.init_sol["truck"].insert(0, (instance.deposit, instance.deposit, 0.0, 0.0) )
+
+    def create_solution(self, selected_paths, gained_time):
+        solution = {"truck": [], "drone_1": [], "drone_2": []}
+        last_drone_used = 2
+        init_truck = self.init_sol["truck"]
+        t = 0
+        for p in selected_paths.keys():
+            path = selected_paths[p]
+            start_node = path["path"][0][0]
+            end_node = path["path"][-1][0]
+            while t < path["start_index"]:
+                solution["truck"].append(init_truck[t])
+                t+=1
+            drone_costs = {1:0, 2:0}
+            drone_to_use = last_drone_used%2 + 1
+            for d in range(path["drones_used"]):
+                d_node = path["d_nodes"][d]
+                solution["truck"].append(( start_node, start_node, 30, "d"+str(drone_to_use) ))
+                go_time = self.instance.drone_time_matrix[start_node-1][d_node-1]
+                solution["drone_"+str(drone_to_use)].append(( start_node, d_node, go_time ))
+                back_time = self.instance.drone_time_matrix[d_node-1][end_node-1]
+                solution["drone_"+str(drone_to_use)].append(( d_node, end_node, back_time ))
+                drone_costs[drone_to_use] = 30*(d+1) + go_time + back_time
+                drone_to_use = drone_to_use%2 + 1
+            last_drone_used = max(drone_costs, key=drone_costs.get)
+
+            solution["truck"].append(init_truck[path["start_index"]]) # t == path["start_index"]
+            sp = nx.shortest_path(
+                self.instance.graph, start_node, end_node, weight="travel_time", method="dijkstra"
+            )
+            # create final solution
+            for j, a in enumerate(sp[:-1]):
+                b = sp[j + 1]
+                time = self.instance.graph.edges[a, b]["travel_time"]
+                solution["truck"].append((a, b, time))
+            wait_time = path["new_cost"] - path["truck_cost"] +    gained_time[p] # gained_time is negative, thus reduced wait time
+            # possibly improve the solution further by delivering end node during wait_time if wait_time > end_node truck delivery time
+            if wait_time > 0:
+                solution["truck"].append((end_node, end_node, wait_time))
+            t = path["end_index"]
+        while t < len(init_truck):
+            solution["truck"].append(init_truck[t])
+            t+=1
+        for tup in solution["truck"]:
+            if tup[2]==0.0:
+                print(tup)
+                solution["truck"].remove(tup)
+        return solution
 
 
     def init_sol_demand_paths(self, demand_limit=2):
@@ -28,11 +81,11 @@ class VRPWDPathHeuristic_2:
                             incomplete_paths[p].append(step)
 
                             path_cost = self.calculate_drone_path_cover_cost(incomplete_paths[p])
-                            if(path_cost[0] > path_cost[1]):    #true if cost is improved by using drones on path
+                            if(path_cost[2] < 0):    #true if cost is improved by using drones on path
                                 path_info = {"path": incomplete_paths[p], 
                                              "start_index": path_start_index[p], 
                                              "end_index": i, 
-                                             "old_cost": path_cost[0], 
+                                             "d_nodes": path_cost[0], 
                                              "new_cost": path_cost[1], 
                                              "gain": path_cost[2], 
                                              "drones_used": path_cost[3], 
@@ -74,13 +127,14 @@ class VRPWDPathHeuristic_2:
             if drone2_cost < drone1_cost:
                 drone2_cost = drone2_cost + 30
             else:
+                d_nodes.reverse()
                 drone1_cost = drone1_cost + 30
         start_end_travel_time = self.instance.dpd_time_matrix[self.instance.dpd_nodes.index(start_node)][self.instance.dpd_nodes.index(end_node)]
         truck_cost = 30*nb_drones_used + path[0][2] + start_end_travel_time
 
         new_path_cost = max(truck_cost, drone1_cost, drone2_cost)
         print("Old path cost =", old_path_cost, ", New path cost =", new_path_cost)
-        return (old_path_cost, new_path_cost, new_path_cost-old_path_cost, nb_drones_used, truck_cost, drone1_cost, drone2_cost)
+        return (d_nodes, new_path_cost, new_path_cost-old_path_cost, nb_drones_used, truck_cost, drone1_cost, drone2_cost)
 
 
     def calculate_path_overlap_matrix(self, paths):
@@ -159,13 +213,13 @@ class VRPWDPathHeuristic_2:
         x_vals = model.getAttr("x", x)
         y_vals = model.getAttr("x", y)
         z_vals = model.getAttr("x", z)
+
         selected_paths = {i: paths_info[i] for i in paths if x_vals[i] > 0.5}
         gained_time = {i: z_vals[i] for i in paths if x_vals[i] > 0.5}
-        #print(x_vals)
-        for i in selected_paths:
-            path = selected_paths[i]
-            path.pop("path")
-            print(i, path)
-        print(gained_time)
+
+        solution = self.create_solution(selected_paths, gained_time)
+
+        for veh in solution:
+            print(veh, ":", solution[veh])
         return
 

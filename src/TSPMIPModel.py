@@ -14,9 +14,9 @@ def create_solution(instance: VRPWDData, tour: list) -> dict:
     node_demands = {
         node: instance.graph.nodes[node]["demand"] for node in instance.dpd_nodes
     }
-    # First and last tuples of truck are (depot, depot, 0, 0) to signal start and stop. Useful for heuristic
-    solution["truck"].append((truck_solution[0], truck_solution[0], 0, 0))
     for i, x in enumerate(truck_solution[:-1]):
+        if x in node_demands.keys() and node_demands[x] > 0.0:
+            solution["truck"].append((x, x, 60*node_demands[x], node_demands[x]))
         y = truck_solution[i + 1]
         sp = nx.shortest_path(
             instance.graph, x, y, weight="travel_time", method="dijkstra"
@@ -26,8 +26,6 @@ def create_solution(instance: VRPWDData, tour: list) -> dict:
             b = sp[j + 1]
             time = instance.graph.edges[a, b]["travel_time"]
             solution["truck"].append((a, b, time))
-        if y in node_demands.keys():
-            solution["truck"].append((y, y, 60*node_demands[y], node_demands[y]))
     return solution
 
 
