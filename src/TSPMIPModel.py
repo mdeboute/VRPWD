@@ -11,12 +11,12 @@ def create_solution(instance: VRPWDData, tour: list) -> dict:
     truck_solution = [instance.dpd_nodes[j] for j in tour]
     solution = {"truck": [], "drone_1": [], "drone_2": []}
     # create a dictionnary with the demand of each node
-    demands_nodes = {
+    node_demands = {
         node: instance.graph.nodes[node]["demand"] for node in instance.dpd_nodes
     }
-    # First and last tuples of truck are (depot, depot, 0, 0) to signal start and stop. Useful for heuristic
-    solution["truck"].append((truck_solution[0], truck_solution[0], 0, 0))
     for i, x in enumerate(truck_solution[:-1]):
+        if x in node_demands.keys() and node_demands[x] > 0.0:
+            solution["truck"].append((x, x, 60 * node_demands[x], node_demands[x]))
         y = truck_solution[i + 1]
         sp = nx.shortest_path(
             instance.graph, x, y, weight="travel_time", method="dijkstra"
@@ -26,8 +26,6 @@ def create_solution(instance: VRPWDData, tour: list) -> dict:
             b = sp[j + 1]
             time = instance.graph.edges[a, b]["travel_time"]
             solution["truck"].append((a, b, time))
-        if y in demands_nodes.keys():
-            solution["truck"].append((y, y, 60 * demands_nodes[y], demands_nodes[y]))
     return solution
 
 
@@ -82,7 +80,7 @@ class TSPMIPModel:
                         <= len(tour) - 1
                     )
 
-        # Given a tuple list of edges, find the shortest subtour
+        # Given a tuplelist of edges, find the shortest subtour
         def subtour(edges):
             unvisited = self.nodes[:]
             cycle = self.nodes[:]  # Dummy - guaranteed to be replaced
