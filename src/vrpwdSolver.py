@@ -42,10 +42,9 @@ def main():
         print("Please use -h or --help to see the usage")
         sys.exit(1)
 
+    verbose = False
     if "-v" in sys.argv or "--verbose" in sys.argv:
         verbose = True
-    else:
-        verbose = False
 
     global vprint
     vprint = verbose_print(verbose)
@@ -62,6 +61,9 @@ def main():
         if method == "heuristic":
             solution = TSPGreedy(data).solve()
             if solution.check():
+                print(
+                    f"Result: runtime={solution.runtime:.2f}sec; objective={solution.objective_value:.2f}sec"
+                )
                 solution.write()
                 if plot:
                     solution.plot()
@@ -69,6 +71,9 @@ def main():
         if method == "mip":
             solution = TSPMIPModel(data).solve()
             if solution.check():
+                print(
+                    f"Result: runtime={solution.runtime:.2f}sec; objective={solution.objective_value:.2f}sec; gap={solution.gap:.4f}%"
+                )
                 solution.write()
                 if plot:
                     solution.plot()
@@ -77,17 +82,44 @@ def main():
         if method == "mip":
             solution = VRPWDMIPModel_1(data).solve()
             # TODO: fix subtours elimination before building a complete solution and checking it
+            if solution.check():
+                print(
+                    f"Result: runtime={solution.runtime:.2f}sec; objective={solution.objective_value:.2f}sec; gap={solution.gap:.4f}%"
+                )
+                solution.write()
+                if plot:
+                    solution.plot()
 
         if method == "heuristic":
             solution = VRPWDHeuristic_1(data).solve()
+            if solution.check():
+                print(
+                    f"Result: runtime={solution.runtime:.2f}sec; objective={solution.objective_value:.2f}sec"
+                )
+                solution.write()
+                if plot:
+                    solution.plot()
     elif case == 2:
         if method == "heuristic":
             solution = VRPWDHeuristic_2(data, 2).solve()
+            # if solution.check():
+            #     print(
+            #         f"Result: runtime={solution.runtime:.2f}sec; objective={solution.objective_value:.2f}sec"
+            #     )
+            #     solution.write()
+            #     if plot:
+            #         solution.plot()
         if method == "pathheuristic":
             solution = VRPWDPathHeuristic_2(data).solve()
-            #solution.write()
+            if solution.check():
+                print(
+                    f"Result: runtime={solution.runtime:.2f}sec; objective={solution.objective_value:.2f}sec"
+                )
+                solution.write()
+                if plot:
+                    solution.plot()
     else:
-        print("Case not implemented yet!")
+        print("Case not implemented yet! Check the usage with -h or --help.")
         sys.exit(1)
 
 

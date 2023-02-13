@@ -1,14 +1,12 @@
-from pandas.core.accessor import register_dataframe_accessor
-
 import time
+import gurobipy as gp
+import networkx as nx
 
 from VRPWDData import VRPWDData
 from TSPMIPModel import TSPMIPModel
 from VRPWDSolution import VRPWDSolution
 from utils import verbose_print
-import gurobipy as gp
 from gurobipy import GRB
-import networkx as nx
 
 
 class VRPWDPathHeuristic_2:
@@ -17,7 +15,7 @@ class VRPWDPathHeuristic_2:
         self.__algorithm = "Path_Heuristic"
         tsp_solution = TSPMIPModel(self.instance).solve()
         self.init_sol = tsp_solution.solution
-        self.init_runtime = tsp_solution.run_time
+        self.init_runtime = tsp_solution.runtime
         # First and last tuples of truck are (depot, depot, 0, 0) to signal start and stop. Useful for heuristic
         self.init_sol["truck"].append((instance.deposit, instance.deposit, 0.0, 0.0))
         if self.init_sol["truck"][0][0] != self.init_sol["truck"][0][1]:
@@ -82,8 +80,8 @@ class VRPWDPathHeuristic_2:
             solution["truck"].append(init_truck[t])
             t += 1
         for tup in solution["truck"]:
-            if tup[2]==0.0:
-                #print(tup)
+            if tup[2] == 0.0:
+                # print(tup)
                 solution["truck"].remove(tup)
         return solution
 
@@ -295,44 +293,31 @@ class VRPWDPathHeuristic_2:
         gained_time = {i: z_vals[i] for i in paths if x_vals[i] > 0.5}
 
         solution = self.create_solution(selected_paths, gained_time)
-        objective_value = sum(solution["truck"][i][2] for i in range(len(solution["truck"])))
+        objective_value = sum(
+            solution["truck"][i][2] for i in range(len(solution["truck"]))
+        )
         runtime = self.init_runtime + preprocess_time + model.Runtime
+        gap = model.MIPGap * 100
 
-        #for veh in solution:
-        #    print(veh, ":", solution[veh])
-
-        # Get solution
         if model.Status == GRB.OPTIMAL:
-            print(
-                f"Optimal Result: runtime={runtime:.2f}sec; objective={objective_value:.2f}sec; gap={model.MIPGap:.4f}%"
-            )
             return VRPWDSolution(
-                self.instance,
-                self.__algorithm,
-                round(objective_value),
-                runtime,
-                solution,
-                self.instance._VERBOSE,
+                instance=self.instance,
+                algorithm=self.__algorithm,
+                objective_value=round(objective_value),
+                runtime=runtime,
+                gap=gap,
+                solution=solution,
+                verbose=self.instance._VERBOSE,
             )
         elif model.Status == GRB.FEASIBLE:
-            print(
-                f"Result: runtime={runtime:.2f}sec; objective={objective_value:.2f}sec; gap={100*model.MIPGap:.4f}%"
-            )
             return VRPWDSolution(
-                self.instance,
-                self.__algorithm,
-                round(objective_value),
-                runtime,
-                solution,
-                self.instance._VERBOSE,
+                instance=self.instance,
+                algorithm=self.__algorithm,
+                objective_value=round(objective_value),
+                runtime=runtime,
+                gap=gap,
+                solution=solution,
+                verbose=self.instance._VERBOSE,
             )
         else:
             print(f"No solution found in {time_limit} seconds!")
-
-    def __str__(self):
-        return f" VRPWDPathHeuristic(instance={self.instance})"
-
-    def __repr__(self):
-        return self.__str__()
-
-

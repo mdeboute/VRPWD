@@ -112,37 +112,26 @@ class TSPMIPModel:
             solution["truck"][i][2] for i in range(len(solution["truck"]))
         )
         runtime = self.model.Runtime
-
-        # Get solution
+        gap = self.model.MIPGap * 100
         if self.model.Status == GRB.OPTIMAL:
-            print(
-                f"Optimal Result: runtime={runtime:.2f}sec; objective={objective_value:.2f}sec; gap={self.model.MIPGap:.4f}%"
-            )
             return VRPWDSolution(
-                self.instance,
-                self.__algorithm,
-                round(objective_value),
-                runtime,
-                solution,
-                self.instance._VERBOSE,
+                instance=self.instance,
+                algorithm=self.__algorithm,
+                objective_value=round(objective_value),
+                runtime=runtime,
+                gap=gap,
+                solution=solution,
+                verbose=self.instance._VERBOSE,
             )
         elif self.model.Status == GRB.FEASIBLE:
-            print(
-                f"Result: runtime={runtime:.2f}sec; objective={objective_value:.2f}sec; gap={100*self.model.MIPGap:.4f}%"
-            )
             return VRPWDSolution(
-                self.instance,
-                self.__algorithm,
-                round(objective_value),
-                runtime,
-                solution,
-                self.instance._VERBOSE,
+                instance=self.instance,
+                algorithm=self.__algorithm,
+                objective_value=round(objective_value),
+                runtime=runtime,
+                gap=gap,
+                solution=solution,
+                verbose=self.instance._VERBOSE,
             )
         else:
             print(f"No solution found in {time_limit} seconds!")
-
-    def __str__(self):
-        return f" TSPWDMIPModel(instance={self.instance})"
-
-    def __repr__(self):
-        return self.__str__()

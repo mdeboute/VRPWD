@@ -16,18 +16,20 @@ class VRPWDSolution:
         instance: VRPWDData,
         algorithm: str,
         objective_value: int,
-        run_time: float,
+        runtime: float,
+        gap,
         solution: dict,
         verbose: bool,
     ):
-        self.__VERBOSE = verbose
+        self._VERBOSE = verbose
         global vprint
-        vprint = verbose_print(self.__VERBOSE)
+        vprint = verbose_print(self._VERBOSE)
 
         self.instance = instance
         self.algorithm = algorithm
         self.objective_value = objective_value
-        self.run_time = run_time
+        self.runtime = runtime
+        self.gap = gap
         self.solution = solution
         self.graph = self._create_graph()
 
@@ -48,6 +50,7 @@ class VRPWDSolution:
         start_time = time.time()
         # get solutions for each type  of vehicle
         truck_tour = self.solution["truck"]
+        number_of_drones = 2
         drone_1_tour = self.solution["drone_1"]
         drone_2_tour = self.solution["drone_2"]
         # create graph
@@ -74,9 +77,10 @@ class VRPWDSolution:
             deposit=True,
             demand=0,
         )
-        # case 0 -> only truck tour
-        if self.instance._CASE == 0:
-            for move in truck_tour:
+        # any case -> truck tour
+        for move in truck_tour:
+            # check for a mouvement tuple
+            if len(move) == 3 and move[0] != move[1]:
                 src = move[0]
                 dest = move[1]
                 tt = move[2]
@@ -89,11 +93,20 @@ class VRPWDSolution:
                     graph.add_node(
                         dest, coordinates=inversed_dest_coords, deposit=False, demand=0
                     )
-                graph.add_edge(src, dest, travel_time=tt)
-        # case 1,2,3 -> truck and drones
-        else:
-            print("ERROR: sol_graph for case 1,2,3 is not implemented yet!")
-            pass
+                graph.add_edge(src, dest, travel_time=tt, vehicle="truck")
+        # case 1,2,3 -> add drone edges
+        if self.instance._CASE > 0:
+            for i in range(number_of_drones):
+                drone_tour = self.solution["drone_{}".format(i + 1)]
+                for move in drone_tour:
+                    # check for a drone move
+                    if len(move) == 3 and move[0] != move[1]:
+                        src = move[0]
+                        dest = move[1]
+                        tt = move[2]
+                        graph.add_edge(
+                            src, dest, travel_time=tt, vehicle="drone_{}".format(i + 1)
+                        )
         end_time = time.time()
         processing_time = end_time - start_time
         vprint("graph:", graph)
@@ -125,11 +138,24 @@ class VRPWDSolution:
         # Show plot
         plt.show()
 
+    def _get_vistited_nodes(self):
+        visited_nodes = []
+        for move in self.solution["truck"]:
+            if len(move) == 3:
+                visited_nodes.append(move[0])
+        for move in self.solution["drone_1"]:
+            visited_nodes.append(move[0])
+        for move in self.solution["drone_2"]:
+            visited_nodes.append(move[0])
+        return visited_nodes
+
     def check(self):
-        if self.instance._CASE == 0:
+        visited_nodes = self._get_vistited_nodes()
+
+        def _classic_check(self):
             # check if all demand nodes are in the tour
             for node in self.instance.dpd_nodes[1:]:
-                if node not in [_tuple[0] for _tuple in list(self.solution["truck"])]:
+                if node not in list(set(visited_nodes)):
                     print(f"ERROR: demand node {node} is not in the tour!")
                     return False
             # check that we start at the deposit
@@ -141,11 +167,20 @@ class VRPWDSolution:
                 print("ERROR: tour does not end at the deposit!")
                 return False
             # check that we do not visit the deposit twice
-            if [_tuple[0] for _tuple in list(self.solution["truck"])].count(
-                self.instance.deposit
-            ) > 2:
-                print("ERROR: tour visits the deposit twice!")
+            # count the number of times we visit the deposit
+            if visited_nodes.count(self.instance.deposit) > 1:
+                print("ERROR: we visit the deposit twice!")
                 return False
+            # check that the 2nd element of the tuple always equals the 1st element of the next tuple
+            for i in range(len(self.solution["truck"]) - 1):
+                if self.solution["truck"][i][1] != self.solution["truck"][i + 1][0]:
+                    print("ERROR: the tour is not continuous!")
+                    return False
+
+        if self.instance._CASE == 0:
+            _classic_check(self)
+        elif self.instance._CASE == 1:
+            _classic_check(self)
         else:
             print("ERROR: checks for that case are not implemented yet!")
         return True
@@ -155,7 +190,10 @@ class VRPWDSolution:
         _sol_file = self.__SOLUTION_DIR + self.algorithm + "_result.txt"
 
         truck_route = list(self.solution["truck"])
-        drone_routes = {1: list(self.solution["drone_1"]), 2:list(self.solution["drone_2"])}
+        drone_routes = {
+            1: list(self.solution["drone_1"]),
+            2: list(self.solution["drone_2"]),
+        }
         coords = nx.get_node_attributes(self.graph, "coordinates")
 
         d_ix = {1: 0, 2: 0}
@@ -164,12 +202,11 @@ class VRPWDSolution:
             f.write("TEMPS ; EVENEMENT ; LOCALISATION\n")
             next_time = 0
             for act in truck_route:
-
                 current_time = next_time
                 prev_event = "NONE"
                 # Dealing with explicit truck events as given in dictionnary
                 if act[0] != act[1]:
-                    #print(coords[act[0]], coords[act[1]])
+                    # print(coords[act[0]], coords[act[1]])
                     f.write(
                         f"{current_time} ; DEPLACEMENT VEHICULE DESTINATION (LAT : {coords[act[1]][0]} ; LON : {coords[act[1]][1]}) ; (LAT : {coords[act[0]][0]} ; LON : {coords[act[0]][1]})\n"
                     )
@@ -181,7 +218,7 @@ class VRPWDSolution:
                     prev_event = "RCHG" + act[3][-1]
                 elif act[3] > 0:
                     for i in range(int(act[3])):
-                        del_time = current_time + i*60
+                        del_time = current_time + i * 60
                         f.write(
                             f"{del_time} ; LIVRAISON COLIS ID : [à specifier] ; (LAT : {coords[act[0]][0]} ; LON : {coords[act[0]][1]})\n"
                         )
@@ -205,8 +242,7 @@ class VRPWDSolution:
                     else:
                         print(f"ERROR, {event_type} not valid!!!")
                     d_ix[d] += 1
-                    drone_times.pop(event)
-
+                    drone_events.pop(event)
 
                 # Dealing with implicit vehicle events based on previous event
                 if prev_event == "DPLC":
@@ -219,9 +255,17 @@ class VRPWDSolution:
                     f.write(
                         f"{next_time} ; LARGAGE DRONE {d} POUR LIVRAISON COLIS ID : [à spécifier] ; (LAT : {coords[act[1]][0]} ; LON : {coords[act[1]][1]})\n"
                     )
-                    drone_events[str_d+"_go"] = next_time + drone_routes[d][d_ix[d]][2]
-                    drone_events[str_d+"_back"] = next_time + drone_routes[d][d_ix[d]][2] + drone_routes[d][d_ix[d]+1][2]
-                    drone_events = dict(sorted(drone_events.items(), key=lambda item: item[1]))
+                    drone_events[str_d + "_go"] = (
+                        next_time + drone_routes[d][d_ix[d]][2]
+                    )
+                    drone_events[str_d + "_back"] = (
+                        next_time
+                        + drone_routes[d][d_ix[d]][2]
+                        + drone_routes[d][d_ix[d] + 1][2]
+                    )
+                    drone_events = dict(
+                        sorted(drone_events.items(), key=lambda item: item[1])
+                    )
 
                 # Dealing with implicit drone events happening at the exact current time
                 for event in list(drone_events.keys()):

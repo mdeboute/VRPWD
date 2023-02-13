@@ -1,4 +1,5 @@
 import networkx as nx
+import time
 
 from VRPWDData import VRPWDData
 from VRPWDSolution import VRPWDSolution
@@ -8,17 +9,19 @@ from utils import verbose_print
 
 class VRPWDHeuristic_1:
     def __init__(self, instance: VRPWDData):
-        self.__algorithm = "Greedy"
         self.instance = instance
+        self.__algorithm = "Greedy"
         self.init_sol = TSPMIPModel(self.instance).solve()
         self.demands_nodes = {
             node: int(self.instance.graph.nodes[node]["demand"])
             for node in self.instance.dpd_nodes[1:]
         }
+        self.graph = self.instance.graph.copy()
+
         global vprint
         vprint = verbose_print(self.instance._VERBOSE)
 
-    def compute_time_savings(self):
+    def _compute_time_savings(self):
         truck_route = self.init_sol.solution["truck"]
         time_savings = []
         for i in range(len(truck_route) - 2):
@@ -38,9 +41,9 @@ class VRPWDHeuristic_1:
                 else:
                     try:
                         # exclude the demand node from the path
-                        self.instance.graph.remove_node(truck_route[i][1])
+                        self.graph.remove_node(truck_route[i][1])
                         time_truck_move_3 = nx.shortest_path_length(
-                            self.instance.graph,
+                            self.graph,
                             truck_route[i][0],
                             truck_route[i + 2][1],
                             weight="travel_time",
@@ -50,7 +53,10 @@ class VRPWDHeuristic_1:
                     except nx.NetworkXNoPath:
                         time_truck_move_3 = float("inf")
                     finally:
-                        self.instance.graph.add_node(truck_route[i][1])
+                        self.graph.add_node(
+                            truck_route[i][1],
+                            demand=self.demands_nodes[truck_route[i][1]],
+                        )
                 delta = (time_truck_move_1 + time_truck_deliver + time_truck_move_2) - (
                     time_drones_moves + time_truck_move_3
                 )
@@ -80,11 +86,16 @@ class VRPWDHeuristic_1:
                     )
                 )
 
+        # if the demand node have a demand > 2, we need to remove the tuple
+        for _tuple in time_savings:
+            if self.demands_nodes[_tuple[1]] > 2:
+                time_savings.remove(_tuple)
+
         vprint(f"Time savings: {time_savings}\n")
 
         return time_savings
 
-    def create_new_moves(self, time_savings):
+    def _create_new_moves(self, time_savings):
         truck_route = self.init_sol.solution["truck"]
         new_truck_route = []
         drone_1_route = []
@@ -115,8 +126,6 @@ class VRPWDHeuristic_1:
                     drone_2_route.append((src, dst, drone_time_travel))
                     drone_2_route.append((dst, src, drone_time_travel))
                     new_truck_route.append((src, src, time_to_wait))
-                else:
-                    raise ValueError("Demand is superior to 2!")
                 if new_dest != src:
                     new_route = nx.shortest_path(
                         self.instance.graph,
@@ -146,11 +155,17 @@ class VRPWDHeuristic_1:
     def solve(self) -> VRPWDSolution:
         vprint(f"Initial solution: {self.init_sol.solution}\n")
         vprint(f"Initial objective value: {self.init_sol.objective_value}\n")
-        time_savings = self.compute_time_savings()
 
-        new_truck_route, drone_1_route, drone_2_route = self.create_new_moves(
+        start_time = time.time()
+
+        time_savings = self._compute_time_savings()
+
+        new_truck_route, drone_1_route, drone_2_route = self._create_new_moves(
             time_savings
         )
+
+        end_time = time.time()
+        runtime = end_time - start_time + self.init_sol.runtime
 
         solution = {
             "truck": new_truck_route,
@@ -171,9 +186,11 @@ class VRPWDHeuristic_1:
         )
 
         return VRPWDSolution(
-            self.instance,
-            self.__algorithm,
-            objective_value,
-            solution,
-            self.instance._VERBOSE,
+            instance=self.instance,
+            algorithm=self.__algorithm,
+            objective_value=objective_value,
+            runtime=runtime,
+            gap="unknown",
+            solution=solution,
+            verbose=self.instance._VERBOSE,
         )
