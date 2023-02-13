@@ -16,7 +16,7 @@ class VRPWDSolution:
         instance: VRPWDData,
         algorithm: str,
         objective_value: int,
-        run_time: float,
+        runtime: float,
         solution: dict,
         verbose: bool,
     ):
@@ -27,7 +27,7 @@ class VRPWDSolution:
         self.instance = instance
         self.algorithm = algorithm
         self.objective_value = objective_value
-        self.run_time = run_time
+        self.runtime = runtime
         self.solution = solution
         self.graph = self._create_graph()
 
@@ -48,7 +48,7 @@ class VRPWDSolution:
         start_time = time.time()
         # get solutions for each type  of vehicle
         truck_tour = self.solution["truck"]
-        number_of_drones=2
+        number_of_drones = 2
         drone_1_tour = self.solution["drone_1"]
         drone_2_tour = self.solution["drone_2"]
         # create graph
@@ -77,8 +77,8 @@ class VRPWDSolution:
         )
         # any case -> truck tour
         for move in truck_tour:
-            #check for a mouvement tuple
-            if len(move)==3 and move[0]!=move[1]:
+            # check for a mouvement tuple
+            if len(move) == 3 and move[0] != move[1]:
                 src = move[0]
                 dest = move[1]
                 tt = move[2]
@@ -91,18 +91,20 @@ class VRPWDSolution:
                     graph.add_node(
                         dest, coordinates=inversed_dest_coords, deposit=False, demand=0
                     )
-                graph.add_edge(src, dest, travel_time=tt, vehicle='truck')
+                graph.add_edge(src, dest, travel_time=tt, vehicle="truck")
         # case 1,2,3 -> add drone edges
         if self.instance._CASE > 0:
             for i in range(number_of_drones):
-                drone_tour=self.solution['drone_{}'.format(i+1)]
+                drone_tour = self.solution["drone_{}".format(i + 1)]
                 for move in drone_tour:
-                    #check for a drone move
-                    if len(move)==3 and move[0]!=move[1]:
+                    # check for a drone move
+                    if len(move) == 3 and move[0] != move[1]:
                         src = move[0]
                         dest = move[1]
                         tt = move[2]
-                        graph.add_edge(src, dest, travel_time=tt, vehicle='drone_{}'.format(i+1))
+                        graph.add_edge(
+                            src, dest, travel_time=tt, vehicle="drone_{}".format(i + 1)
+                        )
         end_time = time.time()
         processing_time = end_time - start_time
         vprint("graph:", graph)
@@ -164,7 +166,10 @@ class VRPWDSolution:
         _sol_file = self.__SOLUTION_DIR + self.algorithm + "_result.txt"
 
         truck_route = list(self.solution["truck"])
-        drone_routes = {1: list(self.solution["drone_1"]), 2:list(self.solution["drone_2"])}
+        drone_routes = {
+            1: list(self.solution["drone_1"]),
+            2: list(self.solution["drone_2"]),
+        }
         coords = nx.get_node_attributes(self.graph, "coordinates")
 
         d_ix = {1: 0, 2: 0}
@@ -173,7 +178,6 @@ class VRPWDSolution:
             f.write("TEMPS ; EVENEMENT ; LOCALISATION\n")
             next_time = 0
             for act in truck_route:
-
                 current_time = next_time
                 prev_event = "NONE"
                 # Dealing with explicit truck events as given in dictionnary
@@ -190,7 +194,7 @@ class VRPWDSolution:
                     prev_event = "RCHG" + act[3][-1]
                 elif act[3] > 0:
                     for i in range(int(act[3])):
-                        del_time = current_time + i*60
+                        del_time = current_time + i * 60
                         f.write(
                             f"{del_time} ; LIVRAISON COLIS ID : [à specifier] ; (LAT : {coords[act[0]][0]} ; LON : {coords[act[0]][1]})\n"
                         )
@@ -216,7 +220,6 @@ class VRPWDSolution:
                     d_ix[d] += 1
                     drone_times.pop(event)
 
-
                 # Dealing with implicit vehicle events based on previous event
                 if prev_event == "DPLC":
                     f.write(
@@ -228,9 +231,17 @@ class VRPWDSolution:
                     f.write(
                         f"{next_time} ; LARGAGE DRONE {d} POUR LIVRAISON COLIS ID : [à spécifier] ; (LAT : {coords[act[1]][0]} ; LON : {coords[act[1]][1]})\n"
                     )
-                    drone_events[str_d+"_go"] = next_time + drone_routes[d][d_ix[d]][2]
-                    drone_events[str_d+"_back"] = next_time + drone_routes[d][d_ix[d]][2] + drone_routes[d][d_ix[d]+1][2]
-                    drone_events = dict(sorted(drone_events.items(), key=lambda item: item[1]))
+                    drone_events[str_d + "_go"] = (
+                        next_time + drone_routes[d][d_ix[d]][2]
+                    )
+                    drone_events[str_d + "_back"] = (
+                        next_time
+                        + drone_routes[d][d_ix[d]][2]
+                        + drone_routes[d][d_ix[d] + 1][2]
+                    )
+                    drone_events = dict(
+                        sorted(drone_events.items(), key=lambda item: item[1])
+                    )
 
                 # Dealing with implicit drone events happening at the exact current time
                 for event in list(drone_events.keys()):

@@ -17,7 +17,7 @@ class VRPWDPathHeuristic_2:
         self.__algorithm = "Path_Heuristic"
         tsp_solution = TSPMIPModel(self.instance).solve()
         self.init_sol = tsp_solution.solution
-        self.init_runtime = tsp_solution.run_time
+        self.init_runtime = tsp_solution.runtime
         # First and last tuples of truck are (depot, depot, 0, 0) to signal start and stop. Useful for heuristic
         self.init_sol["truck"].append((instance.deposit, instance.deposit, 0.0, 0.0))
         if self.init_sol["truck"][0][0] != self.init_sol["truck"][0][1]:
@@ -82,8 +82,8 @@ class VRPWDPathHeuristic_2:
             solution["truck"].append(init_truck[t])
             t += 1
         for tup in solution["truck"]:
-            if tup[2]==0.0:
-                #print(tup)
+            if tup[2] == 0.0:
+                # print(tup)
                 solution["truck"].remove(tup)
         return solution
 
@@ -295,10 +295,12 @@ class VRPWDPathHeuristic_2:
         gained_time = {i: z_vals[i] for i in paths if x_vals[i] > 0.5}
 
         solution = self.create_solution(selected_paths, gained_time)
-        objective_value = sum(solution["truck"][i][2] for i in range(len(solution["truck"])))
+        objective_value = sum(
+            solution["truck"][i][2] for i in range(len(solution["truck"]))
+        )
         runtime = self.init_runtime + preprocess_time + model.Runtime
 
-        #for veh in solution:
+        # for veh in solution:
         #    print(veh, ":", solution[veh])
 
         # Get solution
@@ -334,5 +336,3 @@ class VRPWDPathHeuristic_2:
 
     def __repr__(self):
         return self.__str__()
-
-

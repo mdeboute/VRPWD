@@ -4,6 +4,7 @@ from VRPWDData import VRPWDData
 from VRPWDSolution import VRPWDSolution
 from TSPMIPModel import TSPMIPModel
 from utils import verbose_print
+from time import time
 
 
 class VRPWDHeuristic_1:
@@ -154,11 +155,17 @@ class VRPWDHeuristic_1:
     def solve(self) -> VRPWDSolution:
         vprint(f"Initial solution: {self.init_sol.solution}\n")
         vprint(f"Initial objective value: {self.init_sol.objective_value}\n")
+
+        start_time = time.time()
+
         time_savings = self.compute_time_savings()
 
         new_truck_route, drone_1_route, drone_2_route = self.create_new_moves(
             time_savings
         )
+
+        end_time = time.time()
+        runtime = end_time - start_time
 
         solution = {
             "truck": new_truck_route,
@@ -182,6 +189,7 @@ class VRPWDHeuristic_1:
             self.instance,
             self.__algorithm,
             objective_value,
+            runtime,
             solution,
             self.instance._VERBOSE,
         )
