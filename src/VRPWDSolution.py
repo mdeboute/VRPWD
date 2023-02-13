@@ -48,6 +48,7 @@ class VRPWDSolution:
         start_time = time.time()
         # get solutions for each type  of vehicle
         truck_tour = self.solution["truck"]
+        number_of_drones=2
         drone_1_tour = self.solution["drone_1"]
         drone_2_tour = self.solution["drone_2"]
         # create graph
@@ -74,9 +75,10 @@ class VRPWDSolution:
             deposit=True,
             demand=0,
         )
-        # case 0 -> only truck tour
-        if self.instance._CASE == 0:
-            for move in truck_tour:
+        # any case -> truck tour
+        for move in truck_tour:
+            #check for a mouvement tuple
+            if len(move)==3 and move[0]!=move[1]:
                 src = move[0]
                 dest = move[1]
                 tt = move[2]
@@ -89,11 +91,18 @@ class VRPWDSolution:
                     graph.add_node(
                         dest, coordinates=inversed_dest_coords, deposit=False, demand=0
                     )
-                graph.add_edge(src, dest, travel_time=tt)
-        # case 1,2,3 -> truck and drones
-        else:
-            print("ERROR: sol_graph for case 1,2,3 is not implemented yet!")
-            pass
+                graph.add_edge(src, dest, travel_time=tt, vehicle='truck')
+        # case 1,2,3 -> add drone edges
+        if self.instance._CASE > 0:
+            for i in range(number_of_drones):
+                drone_tour=self.solution['drone_{}'.format(i+1)]
+                for move in drone_tour:
+                    #check for a drone move
+                    if len(move)==3 and move[0]!=move[1]:
+                        src = move[0]
+                        dest = move[1]
+                        tt = move[2]
+                        graph.add_edge(src, dest, travel_time=tt, vehicle='drone_{}'.format(i+1))
         end_time = time.time()
         processing_time = end_time - start_time
         vprint("graph:", graph)
