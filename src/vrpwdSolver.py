@@ -6,6 +6,8 @@ from TSPMIPModel import TSPMIPModel
 from VRPWDMIPModel_1 import VRPWDMIPModel_1
 from VRPWDHeuristic_1 import VRPWDHeuristic_1
 from VRPWDHeuristic_2 import VRPWDHeuristic_2
+from VRPWDPathHeuristic_2 import VRPWDPathHeuristic_2
+from utils import verbose_print
 
 
 def print_usage():
@@ -35,7 +37,7 @@ def main():
         sys.exit(1)
 
     method = sys.argv[3]
-    if method != "heuristic" and method != "mip":
+    if method != "heuristic" and method != "mip" and method != "pathheuristic":
         print("Method should be heuristic or mip")
         print("Please use -h or --help to see the usage")
         sys.exit(1)
@@ -44,6 +46,9 @@ def main():
         verbose = True
     else:
         verbose = False
+
+    global vprint
+    vprint = verbose_print(verbose)
 
     if "-g" in sys.argv or "--graphic" in sys.argv:
         plot = True
@@ -77,7 +82,10 @@ def main():
             solution = VRPWDHeuristic_1(data).solve()
     elif case == 2:
         if method == "heuristic":
-            solution = VRPWDHeuristic_2(data,2).solve()
+            solution = VRPWDHeuristic_2(data, 2).solve()
+        if method == "pathheuristic":
+            solution = VRPWDPathHeuristic_2(data).solve()
+            #solution.write()
     else:
         print("Case not implemented yet!")
         sys.exit(1)

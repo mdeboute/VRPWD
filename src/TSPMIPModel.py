@@ -12,9 +12,11 @@ def create_solution(instance: VRPWDData, tour: list) -> dict:
     solution = {"truck": [], "drone_1": [], "drone_2": []}
     # create a dictionnary with the demand of each node
     node_demands = {
-        node: instance.graph.nodes[node]["demand"] for node in instance.dpd_nodes[1:]
+        node: instance.graph.nodes[node]["demand"] for node in instance.dpd_nodes
     }
     for i, x in enumerate(truck_solution[:-1]):
+        if x in node_demands.keys() and node_demands[x] > 0.0:
+            solution["truck"].append((x, x, 60 * node_demands[x], node_demands[x]))
         y = truck_solution[i + 1]
         sp = nx.shortest_path(
             instance.graph, x, y, weight="travel_time", method="dijkstra"
@@ -24,8 +26,6 @@ def create_solution(instance: VRPWDData, tour: list) -> dict:
             b = sp[j + 1]
             time = instance.graph.edges[a, b]["travel_time"]
             solution["truck"].append((a, b, time))
-        if y in node_demands.keys():
-            solution["truck"].append((y, y, 60*node_demands[y], node_demands[y]))
     return solution
 
 
@@ -109,29 +109,33 @@ class TSPMIPModel:
 
         solution = create_solution(self.instance, tour)
         # to compute the objective value of the solution we have to sum the travel times
-        obj_value = sum(solution["truck"][i][2] for i in range(len(solution["truck"])))
+        objective_value = sum(
+            solution["truck"][i][2] for i in range(len(solution["truck"]))
+        )
         runtime = self.model.Runtime
 
         # Get solution
         if self.model.Status == GRB.OPTIMAL:
             print(
-                f"Optimal Result: runtime={runtime:.2f}sec; objective={obj_value:.2f}sec; gap={self.model.MIPGap:.4f}%"
+                f"Optimal Result: runtime={runtime:.2f}sec; objective={objective_value:.2f}sec; gap={self.model.MIPGap:.4f}%"
             )
             return VRPWDSolution(
                 self.instance,
                 self.__algorithm,
-                round(obj_value),
+                round(objective_value),
+                runtime,
                 solution,
                 self.instance._VERBOSE,
             )
         elif self.model.Status == GRB.FEASIBLE:
             print(
-                f"Result: runtime={runtime:.2f}sec; objective={obj_value:.2f}sec; gap={100*self.model.MIPGap:.4f}%"
+                f"Result: runtime={runtime:.2f}sec; objective={objective_value:.2f}sec; gap={100*self.model.MIPGap:.4f}%"
             )
             return VRPWDSolution(
                 self.instance,
                 self.__algorithm,
-                round(obj_value),
+                round(objective_value),
+                runtime,
                 solution,
                 self.instance._VERBOSE,
             )

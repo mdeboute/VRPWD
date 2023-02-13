@@ -4,40 +4,47 @@ from utils import verbose_print
 import time
 import networkx as nx
 
+
 class VRPWDHeuristic_2:
     def __init__(self, instance: VRPWDData, number_of_drones: int):
         self.instance = instance
         self.ordened_demands_nodes = []
-        self.number_of_drones=number_of_drones
+        self.number_of_drones = number_of_drones
         self.init_sol = TSPMIPModel(self.instance).solve()
 
     def first_stage(self):
-        """ first stage part of the heuristic
+        """first stage part of the heuristic
         -given the TSP solution, affect the k drones to the k first nodes
         while the truck goes to the k+1th node etc"""
-        print('deposit : ',self.instance.deposit)
-        print('initial sol : ',self.init_sol)
-        number_of_drones=2
-        number_of_vehicles=number_of_drones+1
-        dpd_nodes_per_vehicle={} #dict {0:[...], 1:[...], ..., k:[...]} with 0 is the truck dpd nodes list and the other drone dpd nodes list 
-        print('solution : ',self.init_sol.solution['truck'])
-        print('dpd nodes : ',self.instance.dpd_nodes)
+        print("deposit : ", self.instance.deposit)
+        print("initial sol : ", self.init_sol)
+        number_of_drones = 2
+        number_of_vehicles = number_of_drones + 1
+        dpd_nodes_per_vehicle = (
+            {}
+        )  # dict {0:[...], 1:[...], ..., k:[...]} with 0 is the truck dpd nodes list and the other drone dpd nodes list
+        print("solution : ", self.init_sol.solution["truck"])
+        print("dpd nodes : ", self.instance.dpd_nodes)
         for i in range(len(self.init_sol.solution["truck"]) - 1):
-            if self.init_sol.solution["truck"][i][1] in self.instance.dpd_nodes[1:] and self.init_sol.solution["truck"][i][1] not in self.ordened_demands_nodes:
+            if (
+                self.init_sol.solution["truck"][i][1] in self.instance.dpd_nodes[1:]
+                and self.init_sol.solution["truck"][i][1]
+                not in self.ordened_demands_nodes
+            ):
                 self.ordened_demands_nodes.append(self.init_sol.solution["truck"][i][1])
         self.ordened_demands_nodes.append(self.instance.deposit)
-        self.ordened_demands_nodes.insert(0,self.instance.deposit)
-        print('ordened demand node : ',self.ordened_demands_nodes)
+        self.ordened_demands_nodes.insert(0, self.instance.deposit)
+        print("ordened demand node : ", self.ordened_demands_nodes)
         for i in range(number_of_vehicles):
-            dpd_nodes_per_vehicle[i]=[]
+            dpd_nodes_per_vehicle[i] = []
             for node in self.ordened_demands_nodes:
-                if self.ordened_demands_nodes.index(node)%number_of_vehicles==i:
+                if self.ordened_demands_nodes.index(node) % number_of_vehicles == i:
                     dpd_nodes_per_vehicle[i].append(node)
         print(dpd_nodes_per_vehicle)
-        
+
         return dpd_nodes_per_vehicle
 
-    def second_stage(self,dpd_nodes_per_vehicle):
+    def second_stage(self, dpd_nodes_per_vehicle):
         """find the best node to launch drones within each sp between two truck visited demande nodes"""
         print("===============SECOND STAGE==============")
         #create dict to update the demandd
