@@ -17,17 +17,19 @@ class VRPWDSolution:
         algorithm: str,
         objective_value: int,
         runtime: float,
+        gap,
         solution: dict,
         verbose: bool,
     ):
-        self.__VERBOSE = verbose
+        self._VERBOSE = verbose
         global vprint
-        vprint = verbose_print(self.__VERBOSE)
+        vprint = verbose_print(self._VERBOSE)
 
         self.instance = instance
         self.algorithm = algorithm
         self.objective_value = objective_value
         self.runtime = runtime
+        self.gap = gap
         self.solution = solution
         self.graph = self._create_graph()
 
@@ -218,7 +220,7 @@ class VRPWDSolution:
                     else:
                         print(f"ERROR, {event_type} not valid!!!")
                     d_ix[d] += 1
-                    drone_times.pop(event)
+                    drone_events.pop(event)
 
                 # Dealing with implicit vehicle events based on previous event
                 if prev_event == "DPLC":

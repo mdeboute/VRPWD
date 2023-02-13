@@ -1,10 +1,10 @@
 import networkx as nx
+import time
 
 from VRPWDData import VRPWDData
 from VRPWDSolution import VRPWDSolution
 from TSPMIPModel import TSPMIPModel
 from utils import verbose_print
-from time import time
 
 
 class VRPWDHeuristic_1:
@@ -21,7 +21,7 @@ class VRPWDHeuristic_1:
         global vprint
         vprint = verbose_print(self.instance._VERBOSE)
 
-    def compute_time_savings(self):
+    def _compute_time_savings(self):
         truck_route = self.init_sol.solution["truck"]
         time_savings = []
         for i in range(len(truck_route) - 2):
@@ -95,7 +95,7 @@ class VRPWDHeuristic_1:
 
         return time_savings
 
-    def create_new_moves(self, time_savings):
+    def _create_new_moves(self, time_savings):
         truck_route = self.init_sol.solution["truck"]
         new_truck_route = []
         drone_1_route = []
@@ -158,14 +158,14 @@ class VRPWDHeuristic_1:
 
         start_time = time.time()
 
-        time_savings = self.compute_time_savings()
+        time_savings = self._compute_time_savings()
 
-        new_truck_route, drone_1_route, drone_2_route = self.create_new_moves(
+        new_truck_route, drone_1_route, drone_2_route = self._create_new_moves(
             time_savings
         )
 
         end_time = time.time()
-        runtime = end_time - start_time
+        runtime = end_time - start_time + self.init_sol.runtime
 
         solution = {
             "truck": new_truck_route,
@@ -186,10 +186,11 @@ class VRPWDHeuristic_1:
         )
 
         return VRPWDSolution(
-            self.instance,
-            self.__algorithm,
-            objective_value,
-            runtime,
-            solution,
-            self.instance._VERBOSE,
+            instance=self.instance,
+            algorithm=self.__algorithm,
+            objective_value=objective_value,
+            runtime=runtime,
+            gap="unknown",
+            solution=solution,
+            verbose=self.instance._VERBOSE,
         )

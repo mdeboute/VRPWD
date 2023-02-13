@@ -42,14 +42,15 @@ class TSPGreedy:
         )
 
         end = time.time()
-        print(f"Result: runtime={end-start:.2f}sec; objective={objective_value:.2f}sec")
+        runtime = end - start
 
         # Return the solution
         return VRPWDSolution(
-            self.instance,
-            self.__algorithm,
-            round(objective_value),
-            end - start,
-            solution,
-            self.instance._VERBOSE,
+            instance=self.instance,
+            algorithm=self.__algorithm,
+            objective_value=round(objective_value),
+            runtime=runtime,
+            gap="unknown",
+            solution=solution,
+            verbose=self.instance._VERBOSE,
         )
