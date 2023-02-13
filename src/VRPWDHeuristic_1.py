@@ -8,13 +8,15 @@ from utils import verbose_print
 
 class VRPWDHeuristic_1:
     def __init__(self, instance: VRPWDData):
-        self.__algorithm = "Greedy"
         self.instance = instance
+        self.__algorithm = "Greedy"
         self.init_sol = TSPMIPModel(self.instance).solve()
         self.demands_nodes = {
             node: int(self.instance.graph.nodes[node]["demand"])
             for node in self.instance.dpd_nodes[1:]
         }
+        self.graph = self.instance.graph.copy()
+
         global vprint
         vprint = verbose_print(self.instance._VERBOSE)
 
@@ -38,9 +40,9 @@ class VRPWDHeuristic_1:
                 else:
                     try:
                         # exclude the demand node from the path
-                        self.instance.graph.remove_node(truck_route[i][1])
+                        self.graph.remove_node(truck_route[i][1])
                         time_truck_move_3 = nx.shortest_path_length(
-                            self.instance.graph,
+                            self.graph,
                             truck_route[i][0],
                             truck_route[i + 2][1],
                             weight="travel_time",
@@ -50,7 +52,10 @@ class VRPWDHeuristic_1:
                     except nx.NetworkXNoPath:
                         time_truck_move_3 = float("inf")
                     finally:
-                        self.instance.graph.add_node(truck_route[i][1])
+                        self.graph.add_node(
+                            truck_route[i][1],
+                            demand=self.demands_nodes[truck_route[i][1]],
+                        )
                 delta = (time_truck_move_1 + time_truck_deliver + time_truck_move_2) - (
                     time_drones_moves + time_truck_move_3
                 )
@@ -79,6 +84,11 @@ class VRPWDHeuristic_1:
                         key=lambda x: x[3] if x[1] == _tuple[1] else float("inf"),
                     )
                 )
+
+        # if the demand node have a demand > 2, we need to remove the tuple
+        for _tuple in time_savings:
+            if self.demands_nodes[_tuple[1]] > 2:
+                time_savings.remove(_tuple)
 
         vprint(f"Time savings: {time_savings}\n")
 
@@ -115,8 +125,6 @@ class VRPWDHeuristic_1:
                     drone_2_route.append((src, dst, drone_time_travel))
                     drone_2_route.append((dst, src, drone_time_travel))
                     new_truck_route.append((src, src, time_to_wait))
-                else:
-                    raise ValueError("Demand is superior to 2!")
                 if new_dest != src:
                     new_route = nx.shortest_path(
                         self.instance.graph,
