@@ -138,11 +138,24 @@ class VRPWDSolution:
         # Show plot
         plt.show()
 
+    def _get_vistited_nodes(self):
+        visited_nodes = []
+        for move in self.solution["truck"]:
+            if len(move) == 3:
+                visited_nodes.append(move[0])
+        for move in self.solution["drone_1"]:
+            visited_nodes.append(move[0])
+        for move in self.solution["drone_2"]:
+            visited_nodes.append(move[0])
+        return visited_nodes
+
     def check(self):
-        if self.instance._CASE == 0:
+        visited_nodes = self._get_vistited_nodes()
+
+        def _classic_check(self):
             # check if all demand nodes are in the tour
             for node in self.instance.dpd_nodes[1:]:
-                if node not in [_tuple[0] for _tuple in list(self.solution["truck"])]:
+                if node not in list(set(visited_nodes)):
                     print(f"ERROR: demand node {node} is not in the tour!")
                     return False
             # check that we start at the deposit
@@ -154,11 +167,20 @@ class VRPWDSolution:
                 print("ERROR: tour does not end at the deposit!")
                 return False
             # check that we do not visit the deposit twice
-            if [_tuple[0] for _tuple in list(self.solution["truck"])].count(
-                self.instance.deposit
-            ) > 2:
-                print("ERROR: tour visits the deposit twice!")
+            # count the number of times we visit the deposit
+            if visited_nodes.count(self.instance.deposit) > 1:
+                print("ERROR: we visit the deposit twice!")
                 return False
+            # check that the 2nd element of the tuple always equals the 1st element of the next tuple
+            for i in range(len(self.solution["truck"]) - 1):
+                if self.solution["truck"][i][1] != self.solution["truck"][i + 1][0]:
+                    print("ERROR: the tour is not continuous!")
+                    return False
+
+        if self.instance._CASE == 0:
+            _classic_check(self)
+        elif self.instance._CASE == 1:
+            _classic_check(self)
         else:
             print("ERROR: checks for that case are not implemented yet!")
         return True
@@ -184,7 +206,7 @@ class VRPWDSolution:
                 prev_event = "NONE"
                 # Dealing with explicit truck events as given in dictionnary
                 if act[0] != act[1]:
-                    print(coords[act[0]], coords[act[1]])
+                    # print(coords[act[0]], coords[act[1]])
                     f.write(
                         f"{current_time} ; DEPLACEMENT VEHICULE DESTINATION (LAT : {coords[act[1]][0]} ; LON : {coords[act[1]][1]}) ; (LAT : {coords[act[0]][0]} ; LON : {coords[act[0]][1]})\n"
                     )
