@@ -169,7 +169,7 @@ class VRPWDSolution:
                 prev_event = "NONE"
                 # Dealing with explicit truck events as given in dictionnary
                 if act[0] != act[1]:
-                    print(coords[act[0]], coords[act[1]])
+                    #print(coords[act[0]], coords[act[1]])
                     f.write(
                         f"{current_time} ; DEPLACEMENT VEHICULE DESTINATION (LAT : {coords[act[1]][0]} ; LON : {coords[act[1]][1]}) ; (LAT : {coords[act[0]][0]} ; LON : {coords[act[0]][1]})\n"
                     )

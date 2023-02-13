@@ -35,7 +35,7 @@ class TSPMIPModel:
         self.__algorithm = "MIP"
         self.model = gp.Model("TSP")
         self.n = len(instance.dpd_time_matrix)
-        self.nodes = [i for i in range(len(instance.dpd_time_matrix))]
+        self.nodes = [0] + [i for i in range(1, len(instance.dpd_nodes)) if instance.deposit != instance.dpd_nodes[i]]
         self.time = {
             (i, j): instance.dpd_time_matrix[i][j]
             for i, j in combinations(self.nodes, 2)
@@ -106,7 +106,6 @@ class TSPMIPModel:
         vals = self.model.getAttr("x", self.x)
         selected = gp.tuplelist((i, j) for i, j in vals.keys() if vals[i, j] > 0.5)
         tour = subtour(selected) + [0]
-
         solution = create_solution(self.instance, tour)
         # to compute the objective value of the solution we have to sum the travel times
         objective_value = sum(
