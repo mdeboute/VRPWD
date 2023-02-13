@@ -1,4 +1,7 @@
 from pandas.core.accessor import register_dataframe_accessor
+
+import time
+
 from VRPWDData import VRPWDData
 from TSPMIPModel import TSPMIPModel
 from VRPWDSolution import VRPWDSolution
@@ -11,7 +14,10 @@ import networkx as nx
 class VRPWDPathHeuristic_2:
     def __init__(self, instance: VRPWDData):
         self.instance = instance
-        self.init_sol = TSPMIPModel(self.instance).solve().solution
+        self.__algorithm = "Path_Heuristic"
+        tsp_solution = TSPMIPModel(self.instance).solve()
+        self.init_sol = tsp_solution.solution
+        self.init_runtime = tsp_solution.run_time
         # First and last tuples of truck are (depot, depot, 0, 0) to signal start and stop. Useful for heuristic
         self.init_sol["truck"].append((instance.deposit, instance.deposit, 0.0, 0.0))
         if self.init_sol["truck"][0][0] != self.init_sol["truck"][0][1]:
@@ -61,7 +67,7 @@ class VRPWDPathHeuristic_2:
             t+=1
         for tup in solution["truck"]:
             if tup[2]==0.0:
-                print(tup)
+                #print(tup)
                 solution["truck"].remove(tup)
         return solution
 
@@ -176,18 +182,20 @@ class VRPWDPathHeuristic_2:
         max_gap: float = 0.00001,
         nb_threads: int = 4,
     ):
+        start_preprocess_time = time.time()
         paths_info = self.init_sol_demand_paths()
         overlap_matrix = self.calculate_path_overlap_matrix(paths_info)
         inter_path_time_gain_matrix = self.calculate_interpath_time_gain_matrix(paths_info)
+        preprocess_time = time.time() - start_preprocess_time
 
         model = gp.Model("Minimum Paths Selection Problem")
         n = len(paths_info)
         paths = [i for i in range(n)]
-        time = {i: paths_info[i]["gain"] for i in paths}
+        gain_time = {i: paths_info[i]["gain"] for i in paths}
         ipg_time = {(i, j): inter_path_time_gain_matrix[i][j] for i in paths for j in range(i+1)}
         
         x = model.addVars(
-            time.keys(), obj=time, vtype=GRB.BINARY, name="x"
+            gain_time.keys(), obj=gain_time, vtype=GRB.BINARY, name="x"
         )
         y = model.addVars(
             ipg_time.keys(), obj=0.0, vtype=GRB.BINARY, name="y"
@@ -218,8 +226,44 @@ class VRPWDPathHeuristic_2:
         gained_time = {i: z_vals[i] for i in paths if x_vals[i] > 0.5}
 
         solution = self.create_solution(selected_paths, gained_time)
+        obj_value = sum(solution["truck"][i][2] for i in range(len(solution["truck"])))
+        runtime = self.init_runtime + preprocess_time + model.Runtime
 
-        for veh in solution:
-            print(veh, ":", solution[veh])
-        return
+        #for veh in solution:
+        #    print(veh, ":", solution[veh])
+
+        # Get solution
+        if model.Status == GRB.OPTIMAL:
+            print(
+                f"Optimal Result: runtime={runtime:.2f}sec; objective={obj_value:.2f}sec; gap={model.MIPGap:.4f}%"
+            )
+            return VRPWDSolution(
+                self.instance,
+                self.__algorithm,
+                round(obj_value),
+                runtime,
+                solution,
+                self.instance._VERBOSE,
+            )
+        elif model.Status == GRB.FEASIBLE:
+            print(
+                f"Result: runtime={runtime:.2f}sec; objective={obj_value:.2f}sec; gap={100*model.MIPGap:.4f}%"
+            )
+            return VRPWDSolution(
+                self.instance,
+                self.__algorithm,
+                round(obj_value),
+                runtime,
+                solution,
+                self.instance._VERBOSE,
+            )
+        else:
+            print(f"No solution found in {time_limit} seconds!")
+
+    def __str__(self):
+        return f" VRPWDPathHeuristic(instance={self.instance})"
+
+    def __repr__(self):
+        return self.__str__()
+
 

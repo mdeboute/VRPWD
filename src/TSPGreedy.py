@@ -47,6 +47,7 @@ class TSPGreedy:
             self.instance,
             self.__algorithm,
             round(obj_value),
+            end-start,
             solution,
             self.instance._VERBOSE,
         )
