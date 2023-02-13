@@ -123,6 +123,7 @@ class TSPMIPModel:
                 self.instance,
                 self.__algorithm,
                 round(objective_value),
+                runtime,
                 solution,
                 self.instance._VERBOSE,
             )
@@ -134,6 +135,7 @@ class TSPMIPModel:
                 self.instance,
                 self.__algorithm,
                 round(objective_value),
+                runtime,
                 solution,
                 self.instance._VERBOSE,
             )

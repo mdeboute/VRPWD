@@ -85,6 +85,7 @@ def main():
             solution = VRPWDHeuristic_2(data, 2).solve()
         if method == "pathheuristic":
             solution = VRPWDPathHeuristic_2(data).solve()
+            #solution.write()
     else:
         print("Case not implemented yet!")
         sys.exit(1)
