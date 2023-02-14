@@ -107,8 +107,8 @@ def main():
             #         f"Result: runtime={solution.runtime:.2f}sec; objective={solution.objective_value:.2f}sec"
             #     )
             #     solution.write()
-            #     if plot:
-            #         solution.plot()
+            if plot:
+                solution.plot()
         if method == "pathheuristic":
             solution = VRPWDPathHeuristic_2(data).solve()
             if solution.check():

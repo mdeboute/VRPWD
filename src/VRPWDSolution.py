@@ -51,8 +51,6 @@ class VRPWDSolution:
         # get solutions for each type  of vehicle
         truck_tour = self.solution["truck"]
         number_of_drones = 2
-        drone_1_tour = self.solution["drone_1"]
-        drone_2_tour = self.solution["drone_2"]
         # create graph
         graph = nx.DiGraph()
         # add demands nodes
