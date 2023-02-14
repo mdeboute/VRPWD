@@ -31,7 +31,7 @@ class VRPWDData(object):
         self.graph = self._create_graph()
         self.dpd_time_matrix = self._create_dpd_time_matrix()
 
-        if self._CASE > 0:  # vrp
+        if self._CASE > 0:  # vrp with drones
             self.drone_time_matrix = self._create_drone_time_matrix(drone_speed=50)
 
     def _create_gdfs(self):
