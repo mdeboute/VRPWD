@@ -6,6 +6,7 @@ from pathlib import Path
 from utils import verbose_print
 from VRPWDData import VRPWDData
 from pathlib import Path
+from itertools import chain
 
 
 class VRPWDSolution:
@@ -139,14 +140,21 @@ class VRPWDSolution:
         plt.show()
 
     def _get_vistited_nodes(self):
-        visited_nodes = []
+        nodes_visited_by_truck = []
+        nodes_visited_by_drone_1 = []
+        nodes_visited_by_drone_2 = []
         for move in self.solution["truck"]:
-            if len(move) == 3:
-                visited_nodes.append(move[0])
+            if len(move) == 3 and move[0] != move[1]:
+                nodes_visited_by_truck.append(move[0])
         for move in self.solution["drone_1"]:
-            visited_nodes.append(move[0])
+            nodes_visited_by_drone_1.append(move[0])
         for move in self.solution["drone_2"]:
-            visited_nodes.append(move[0])
+            nodes_visited_by_drone_2.append(move[0])
+        visited_nodes = [
+            nodes_visited_by_truck,
+            nodes_visited_by_drone_1,
+            nodes_visited_by_drone_2,
+        ]
         return visited_nodes
 
     def check(self):
@@ -155,7 +163,7 @@ class VRPWDSolution:
         def _classic_check(self):
             # check if all demand nodes are in the tour
             for node in self.instance.dpd_nodes[1:]:
-                if node not in list(set(visited_nodes)):
+                if node not in list(set(list(chain(*visited_nodes)))):
                     print(f"ERROR: demand node {node} is not in the tour!")
                     return False
             # check that we start at the deposit
@@ -167,8 +175,8 @@ class VRPWDSolution:
                 print("ERROR: tour does not end at the deposit!")
                 return False
             # check that we do not visit the deposit twice
-            # count the number of times we visit the deposit
-            if visited_nodes.count(self.instance.deposit) > 1:
+            # count the number of times we visit the deposit in the nodes visited by the truck
+            if visited_nodes[0].count(self.instance.deposit) > 1:
                 print("ERROR: we visit the deposit twice!")
                 return False
             # check that the 2nd element of the tuple always equals the 1st element of the next tuple
