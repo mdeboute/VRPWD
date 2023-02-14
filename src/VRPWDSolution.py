@@ -119,6 +119,7 @@ class VRPWDSolution:
         # Draw graph
         coordinates = nx.get_node_attributes(self.graph, "coordinates")
         node_colors = []
+        edge_colors = []
         for node in self.graph.nodes():
             if self.graph.nodes[node]["deposit"]:
                 node_colors.append("g")
@@ -126,11 +127,20 @@ class VRPWDSolution:
                 node_colors.append("r")
             else:
                 node_colors.append("b")
+        for _,_,d in self.graph.edges(data=True):
+            #print(d)
+            if d["vehicle"]=="truck":
+                edge_colors.append("black")
+            elif d["vehicle"]=="drone_1":
+                edge_colors.append("green")
+            elif d["vehicle"]=="drone_2":
+                edge_colors.append("yellow")
         nx.draw(
             self.graph,
             coordinates,
             node_color=node_colors,
-            with_labels=False,
+            edge_color=edge_colors,
+            with_labels=True,
             node_size=50,
             width=0.5,
         )
