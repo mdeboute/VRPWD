@@ -35,7 +35,12 @@ class VRPWDSolution:
         self.graph = self._create_graph()
 
         self.__SOLUTION_DIR = (
-            str(self.__BASE_DIR) + "/solution/" + self.instance._INSTANCE_NAME + "/"
+            str(self.__BASE_DIR)
+            + "/solution/"
+            + self.instance._INSTANCE_NAME
+            + "/case_"
+            + str(self.instance._CASE)
+            + "/"
         )
 
     def __str__(self):
@@ -140,7 +145,7 @@ class VRPWDSolution:
             coordinates,
             node_color=node_colors,
             edge_color=edge_colors,
-            with_labels=True,
+            with_labels=False,
             node_size=50,
             width=0.5,
         )
@@ -199,6 +204,8 @@ class VRPWDSolution:
         if self.instance._CASE == 0:
             _classic_check(self)
         elif self.instance._CASE == 1:
+            _classic_check(self)
+        elif self.instance._CASE == 2:
             _classic_check(self)
         else:
             print("ERROR: checks for that case are not implemented yet!")

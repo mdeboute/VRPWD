@@ -74,7 +74,7 @@ class VRPWDPathHeuristic_2:
             )  # gained_time is negative, thus reduced wait time
             # possibly improve the solution further by delivering end node during wait_time if wait_time > end_node truck delivery time
             if wait_time > 0:
-                solution["truck"].append((end_node, end_node, wait_time+0.001))
+                solution["truck"].append((end_node, end_node, wait_time + 0.001))
             t = path["end_index"]
         while t < len(init_truck):
             solution["truck"].append(init_truck[t])

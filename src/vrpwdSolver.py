@@ -110,7 +110,7 @@ def main():
                 print(
                     f"Result: runtime={solution.runtime:.2f}sec; objective={solution.objective_value:.2f}sec"
                 )
-                # solution.write()
+                solution.write()
                 if plot:
                     solution.plot()
     elif case == 2:
