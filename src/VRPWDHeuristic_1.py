@@ -25,7 +25,11 @@ class VRPWDHeuristic_1:
         truck_route = self.init_sol.solution["truck"]
         time_savings = []
         for i in range(len(truck_route) - 2):
-            if len(truck_route[i]) == 3 and truck_route[i][1] in self.demands_nodes:
+            if (
+                len(truck_route[i]) == 3
+                and truck_route[i][1] in self.demands_nodes
+                and len(truck_route[i + 1]) == 4
+            ):
                 time_truck_move_1 = truck_route[i][-1]
                 time_truck_deliver = truck_route[i + 1][-2]
                 time_truck_move_2 = truck_route[i + 2][-1]
@@ -126,7 +130,7 @@ class VRPWDHeuristic_1:
                     drone_2_route.append((src, dst, drone_time_travel))
                     drone_2_route.append((dst, src, drone_time_travel))
                     new_truck_route.append((src, src, time_to_wait))
-                if new_dest != src:
+                if src != dst:
                     new_route = nx.shortest_path(
                         self.instance.graph,
                         src,
@@ -144,9 +148,16 @@ class VRPWDHeuristic_1:
                                 ]["travel_time"],
                             )
                         )
-            if (src in demands_nodes_delivered_by_drones) or (
-                dst in demands_nodes_delivered_by_drones
-            ):
+            # if one node of the move (the src or the dst) is delivered by a drone and the move is not mandatory to reach the destination, we pass
+            elif (src in demands_nodes_delivered_by_drones) and len(
+                truck_route[i - 1]
+            ) == 4:
+                pass
+            elif (dst in demands_nodes_delivered_by_drones) and len(
+                truck_route[i + 1]
+            ) == 4:
+                pass
+            elif (src == dst) and ((src or dst) in demands_nodes_delivered_by_drones):
                 pass
             else:
                 new_truck_route.append(truck_route[i])

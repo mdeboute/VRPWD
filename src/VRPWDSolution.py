@@ -127,13 +127,13 @@ class VRPWDSolution:
                 node_colors.append("r")
             else:
                 node_colors.append("b")
-        for _,_,d in self.graph.edges(data=True):
-            #print(d)
-            if d["vehicle"]=="truck":
+        for _, _, d in self.graph.edges(data=True):
+            # print(d)
+            if d["vehicle"] == "truck":
                 edge_colors.append("black")
-            elif d["vehicle"]=="drone_1":
+            elif d["vehicle"] == "drone_1":
                 edge_colors.append("green")
-            elif d["vehicle"]=="drone_2":
+            elif d["vehicle"] == "drone_2":
                 edge_colors.append("yellow")
         nx.draw(
             self.graph,
@@ -191,6 +191,9 @@ class VRPWDSolution:
             for i in range(len(self.solution["truck"]) - 1):
                 if self.solution["truck"][i][1] != self.solution["truck"][i + 1][0]:
                     print("ERROR: the tour is not continuous!")
+                    # print the 2 tuples that are not continuous
+                    print(self.solution["truck"][i])
+                    print(self.solution["truck"][i + 1])
                     return False
 
         if self.instance._CASE == 0:
@@ -243,14 +246,17 @@ class VRPWDSolution:
                 # Dealing with implicit drone events happening in parallel to truck events
                 for event in list(drone_events.keys()):
                     if drone_events[event] > next_time:
-                        break   # If all remaining events happen after current period, we don't writing them
+                        break  # If all remaining events happen after current period, we don't writing them
                     d = int(event[0])
                     event_type = event[2:]
                     if event_type == "go":
                         f.write(
                             f"{drone_events[event]} ; LIVRAISON DRONE {d} COLIS ID : [à specifier]\n"
                         )
-                    elif event_type == "back" and (self.instance._CASE == 3 or act[0] == drone_routes[d][d_ix[d]][1] == act[1]):
+                    elif event_type == "back" and (
+                        self.instance._CASE == 3
+                        or act[0] == drone_routes[d][d_ix[d]][1] == act[1]
+                    ):
                         # A drone can only be recovered midway through a truck action if the truck is stationned on a node or we are in case 3
                         end_node = drone_routes[d][d_ix[d]][1]
                         f.write(
