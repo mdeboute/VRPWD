@@ -238,12 +238,12 @@ class VRPWDSolution:
                     prev_event = "DPLC"
                 elif len(act) == 4 and (act[3] == "d1" or act[3] == "d2"):
                     f.write(
-                        f"{current_time} ; RECHARGEMENT DRONE {act[3][-1]} ; (LAT : {coords[act[0]][0]} ; LON : {coords[act[0]][1]})\n"
+                        f"{current_time} ; CHARGEMENT DRONE {act[3][-1]} ; (LAT : {coords[act[0]][0]} ; LON : {coords[act[0]][1]})\n"
                     )
                     prev_event = "RCHG" + act[3][-1]
                 elif len(act) == 4 and act[3] > 0:
                     for i in range(int(act[3])):
-                        del_time = current_time + i * 60
+                        del_time = current_time + 60
                         f.write(
                             f"{del_time} ; LIVRAISON COLIS ID : [à specifier] ; (LAT : {coords[act[0]][0]} ; LON : {coords[act[0]][1]})\n"
                         )
@@ -297,7 +297,7 @@ class VRPWDSolution:
                     )
 
                 # Dealing with implicit drone events happening at the exact current time
-                #   (only those that were inelligible during previous for loop over drone_events)
+                # (only those that were inelligible during previous for loop over drone_events)
                 for event in list(drone_events.keys()):
                     if drone_events[event] > next_time:
                         break

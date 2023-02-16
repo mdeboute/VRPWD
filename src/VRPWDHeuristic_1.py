@@ -116,7 +116,7 @@ class VRPWDHeuristic_1:
             if (src, dst) in moves_to_change and len(truck_route[i + 1]) == 4:
                 new_dest = time_savings[moves_to_change.index((src, dst))][2]
                 drone_time_travel = self.instance.drone_time_matrix[src][dst]
-                time_to_wait = 2 * drone_time_travel
+                time_to_wait = (2 * drone_time_travel) + 0.001
                 if self.demands_nodes[dst] == 1:
                     new_truck_route.append((src, src, 30, "d1"))
                     drone_1_route.append((src, dst, drone_time_travel))
