@@ -118,13 +118,13 @@ class VRPWDHeuristic_1:
                 drone_time_travel = self.instance.drone_time_matrix[src][dst]
                 time_to_wait = 2 * drone_time_travel
                 if self.demands_nodes[dst] == 1:
-                    new_truck_route.append((src, src, 30, "drone_1"))
+                    new_truck_route.append((src, src, 30, "d1"))
                     drone_1_route.append((src, dst, drone_time_travel))
                     drone_1_route.append((dst, src, drone_time_travel))
                     new_truck_route.append((src, src, time_to_wait))
                 elif self.demands_nodes[dst] == 2:
-                    new_truck_route.append((src, src, 30, "drone_1"))
-                    new_truck_route.append((src, src, 30, "drone_2"))
+                    new_truck_route.append((src, src, 30, "d1"))
+                    new_truck_route.append((src, src, 30, "d2"))
                     drone_1_route.append((src, dst, drone_time_travel))
                     drone_1_route.append((dst, src, drone_time_travel))
                     drone_2_route.append((src, dst, drone_time_travel))
