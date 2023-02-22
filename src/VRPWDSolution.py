@@ -243,9 +243,8 @@ class VRPWDSolution:
                     prev_event = "RCHG" + act[3][-1]
                 elif len(act) == 4 and act[3] > 0:
                     for i in range(int(act[3])):
-                        del_time = current_time + 60
                         f.write(
-                            f"{del_time} ; LIVRAISON COLIS ID : [à specifier] ; (LAT : {coords[act[0]][0]} ; LON : {coords[act[0]][1]})\n"
+                            f"{current_time} ; LIVRAISON COLIS ID : {act[1]} ; (LAT : {coords[act[0]][0]} ; LON : {coords[act[0]][1]})\n"
                         )
                 next_time = current_time + act[2]
 
@@ -257,7 +256,7 @@ class VRPWDSolution:
                     event_type = event[2:]
                     if event_type == "go":
                         f.write(
-                            f"{drone_events[event]} ; LIVRAISON DRONE {d} COLIS ID : [à specifier]\n"
+                            f"{drone_events[event]} ; LIVRAISON DRONE {d} COLIS ID : {drone_routes[d][d_ix[d]][1]}\n"
                         )
                     elif event_type == "back" and (
                         self.instance._CASE == 3
@@ -282,7 +281,7 @@ class VRPWDSolution:
                     str_d = prev_event[-1]
                     d = int(str_d)
                     f.write(
-                        f"{next_time} ; LARGAGE DRONE {d} POUR LIVRAISON COLIS ID : [à spécifier] ; (LAT : {coords[act[1]][0]} ; LON : {coords[act[1]][1]})\n"
+                        f"{next_time} ; LARGAGE DRONE {d} POUR LIVRAISON COLIS ID : {drone_routes[d][d_ix[d]][1]} ; (LAT : {coords[act[1]][0]} ; LON : {coords[act[1]][1]})\n"
                     )
                     drone_events[str_d + "_go"] = (
                         next_time + drone_routes[d][d_ix[d]][2]
@@ -305,7 +304,7 @@ class VRPWDSolution:
                     event_type = event[2:]
                     if event_type == "go":
                         f.write(
-                            f"{next_time} ; LIVRAISON DRONE {d} COLIS ID : [à specifier]\n"
+                            f"{next_time} ; LIVRAISON DRONE {d} COLIS ID : {drone_routes[d][d_ix[d]][1]}\n"
                         )
                     elif event_type == "back" and drone_routes[d][d_ix[d]][1] == act[1]:
                         end_node = drone_routes[d][d_ix[d]][1]
