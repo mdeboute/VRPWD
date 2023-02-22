@@ -235,7 +235,7 @@ class VRPWDPathHeuristic_2:
 
     def solve(
         self,
-        time_limit: int = 600,
+        time_limit: int = 3600,
         max_gap: float = 0.00001,
         nb_threads: int = available_cpu_count(),
     ):
@@ -308,7 +308,7 @@ class VRPWDPathHeuristic_2:
                 solution=solution,
                 verbose=self.instance._VERBOSE,
             )
-        elif model.Status == GRB.FEASIBLE:
+        elif not self.model.Status == GRB.INF_OR_UNBD:
             return VRPWDSolution(
                 instance=self.instance,
                 algorithm=self.__algorithm,
