@@ -5,8 +5,8 @@ import networkx as nx
 from VRPWDData import VRPWDData
 from TSPMIPModel import TSPMIPModel
 from VRPWDSolution import VRPWDSolution
-from utils import verbose_print
 from gurobipy import GRB
+from utils import available_cpu_count
 
 
 class VRPWDPathHeuristic_2:
@@ -237,7 +237,7 @@ class VRPWDPathHeuristic_2:
         self,
         time_limit: int = 600,
         max_gap: float = 0.00001,
-        nb_threads: int = 4,
+        nb_threads: int = available_cpu_count(),
     ):
         start_preprocess_time = time.time()
         paths_info = self.init_sol_demand_paths()

@@ -5,6 +5,7 @@ from gurobipy import GRB
 from itertools import combinations
 from VRPWDData import VRPWDData
 from VRPWDSolution import VRPWDSolution
+from utils import available_cpu_count
 
 
 def create_solution(instance: VRPWDData, tour: list) -> dict:
@@ -61,7 +62,7 @@ class TSPMIPModel:
         self,
         time_limit: int = 600,
         max_gap: float = 0.00001,
-        nb_threads: int = 4,
+        nb_threads: int = available_cpu_count(),
     ) -> VRPWDSolution:
         self.model.Params.OutputFlag = int(self.instance._VERBOSE)
         self.model.Params.TimeLimit = time_limit

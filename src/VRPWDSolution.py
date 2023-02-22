@@ -207,6 +207,8 @@ class VRPWDSolution:
             _classic_check(self)
         elif self.instance._CASE == 2:
             _classic_check(self)
+        elif self.instance._CASE == 3:
+            _classic_check(self)
         else:
             print("ERROR: checks for that case are not implemented yet!")
         return True

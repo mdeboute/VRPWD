@@ -95,7 +95,6 @@ def main():
     elif case == 1:
         if method == "mip":
             solution = VRPWDReducedMIPModel_1(data).solve()
-            # TODO: fix subtours elimination before building a complete solution and checking it
             if solution.check():
                 print(
                     f"Result: runtime={solution.runtime:.2f}sec; objective={solution.objective_value:.2f}sec; gap={solution.gap:.4f}%"
@@ -132,6 +131,9 @@ def main():
                 solution.write()
                 if plot:
                     solution.plot()
+    elif case == 3:
+        if method == "heuristic" or method == "h":
+            pass
     else:
         print("Case not implemented yet! Check the usage with -h or --help.")
         sys.exit(1)
