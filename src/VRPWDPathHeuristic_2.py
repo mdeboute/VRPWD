@@ -74,7 +74,7 @@ class VRPWDPathHeuristic_2:
             )  # gained_time is negative, thus reduced wait time
             # possibly improve the solution further by delivering end node during wait_time if wait_time > end_node truck delivery time
             if wait_time > 0:
-                solution["truck"].append((end_node, end_node, wait_time))
+                solution["truck"].append((end_node, end_node, wait_time + 0.001))
             t = path["end_index"]
         while t < len(init_truck):
             solution["truck"].append(init_truck[t])
@@ -177,7 +177,6 @@ class VRPWDPathHeuristic_2:
         truck_cost = 30 * nb_drones_used + path[0][2] + start_end_travel_time
 
         new_path_cost = max(truck_cost, drone1_cost, drone2_cost)
-        print("Old path cost =", old_path_cost, ", New path cost =", new_path_cost)
         return (
             d_nodes,
             new_path_cost,

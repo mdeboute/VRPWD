@@ -3,7 +3,7 @@ import sys
 from VRPWDData import VRPWDData
 from TSPGreedy import TSPGreedy
 from TSPMIPModel import TSPMIPModel
-from VRPWDMIPModel_1 import VRPWDMIPModel_1
+from VRPWDReducedMIPModel_1 import VRPWDReducedMIPModel_1
 from VRPWDHeuristic_1 import VRPWDHeuristic_1
 from VRPWDHeuristic_2 import VRPWDHeuristic_2
 from VRPWDPathHeuristic_2 import VRPWDPathHeuristic_2
@@ -94,7 +94,7 @@ def main():
 
     elif case == 1:
         if method == "mip":
-            solution = VRPWDMIPModel_1(data).solve()
+            solution = VRPWDReducedMIPModel_1(data).solve()
             # TODO: fix subtours elimination before building a complete solution and checking it
             if solution.check():
                 print(
@@ -110,7 +110,7 @@ def main():
                 print(
                     f"Result: runtime={solution.runtime:.2f}sec; objective={solution.objective_value:.2f}sec"
                 )
-                # solution.write()
+                solution.write()
                 if plot:
                     solution.plot()
     elif case == 2:

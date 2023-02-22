@@ -35,7 +35,12 @@ class VRPWDSolution:
         self.graph = self._create_graph()
 
         self.__SOLUTION_DIR = (
-            str(self.__BASE_DIR) + "/solution/" + self.instance._INSTANCE_NAME + "/"
+            str(self.__BASE_DIR)
+            + "/solution/"
+            + self.instance._INSTANCE_NAME
+            + "/case_"
+            + str(self.instance._CASE)
+            + "/"
         )
 
     def __str__(self):
@@ -127,20 +132,20 @@ class VRPWDSolution:
                 node_colors.append("r")
             else:
                 node_colors.append("b")
-        for _,_,d in self.graph.edges(data=True):
-            #print(d)
-            if d["vehicle"]=="truck":
+        for _, _, d in self.graph.edges(data=True):
+            # print(d)
+            if d["vehicle"] == "truck":
                 edge_colors.append("black")
-            elif d["vehicle"]=="drone_1":
+            elif d["vehicle"] == "drone_1":
                 edge_colors.append("green")
-            elif d["vehicle"]=="drone_2":
+            elif d["vehicle"] == "drone_2":
                 edge_colors.append("yellow")
         nx.draw(
             self.graph,
             coordinates,
             node_color=node_colors,
             edge_color=edge_colors,
-            with_labels=True,
+            with_labels=False,
             node_size=50,
             width=0.5,
         )
@@ -191,11 +196,16 @@ class VRPWDSolution:
             for i in range(len(self.solution["truck"]) - 1):
                 if self.solution["truck"][i][1] != self.solution["truck"][i + 1][0]:
                     print("ERROR: the tour is not continuous!")
+                    # print the 2 tuples that are not continuous
+                    print(self.solution["truck"][i])
+                    print(self.solution["truck"][i + 1])
                     return False
 
         if self.instance._CASE == 0:
             _classic_check(self)
         elif self.instance._CASE == 1:
+            _classic_check(self)
+        elif self.instance._CASE == 2:
             _classic_check(self)
         else:
             print("ERROR: checks for that case are not implemented yet!")
@@ -222,41 +232,43 @@ class VRPWDSolution:
                 prev_event = "NONE"
                 # Dealing with explicit truck events as given in dictionnary
                 if act[0] != act[1]:
-                    # print(coords[act[0]], coords[act[1]])
                     f.write(
                         f"{current_time} ; DEPLACEMENT VEHICULE DESTINATION (LAT : {coords[act[1]][0]} ; LON : {coords[act[1]][1]}) ; (LAT : {coords[act[0]][0]} ; LON : {coords[act[0]][1]})\n"
                     )
                     prev_event = "DPLC"
                 elif len(act) == 4 and (act[3] == "d1" or act[3] == "d2"):
                     f.write(
-                        f"{current_time} ; RECHARGEMENT DRONE {act[3][-1]} ; (LAT : {coords[act[0]][0]} ; LON : {coords[act[0]][1]})\n"
+                        f"{current_time} ; CHARGEMENT DRONE {act[3][-1]} ; (LAT : {coords[act[0]][0]} ; LON : {coords[act[0]][1]})\n"
                     )
                     prev_event = "RCHG" + act[3][-1]
-                elif act[3] > 0:
+                elif len(act) == 4 and act[3] > 0:
                     for i in range(int(act[3])):
-                        del_time = current_time + i * 60
                         f.write(
-                            f"{del_time} ; LIVRAISON COLIS ID : [à specifier] ; (LAT : {coords[act[0]][0]} ; LON : {coords[act[0]][1]})\n"
+                            f"{current_time} ; LIVRAISON COLIS ID : {act[1]} ; (LAT : {coords[act[0]][0]} ; LON : {coords[act[0]][1]})\n"
                         )
                 next_time = current_time + act[2]
 
                 # Dealing with implicit drone events happening in parallel to truck events
                 for event in list(drone_events.keys()):
-                    if drone_events[event] >= next_time:
-                        break
+                    if drone_events[event] > next_time:
+                        break  # If all remaining events happen after current period, we don't writing them
                     d = int(event[0])
                     event_type = event[2:]
                     if event_type == "go":
                         f.write(
-                            f"{drone_events[event]} ; LIVRAISON DRONE {d} COLIS ID : [à specifier]\n"
+                            f"{drone_events[event]} ; LIVRAISON DRONE {d} COLIS ID : {drone_routes[d][d_ix[d]][1]}\n"
                         )
-                    elif event_type == "back":
+                    elif event_type == "back" and (
+                        self.instance._CASE == 3
+                        or act[0] == drone_routes[d][d_ix[d]][1] == act[1]
+                    ):
+                        # A drone can only be recovered midway through a truck action if the truck is stationned on a node or we are in case 3
                         end_node = drone_routes[d][d_ix[d]][1]
                         f.write(
                             f"{drone_events[event]} ; RECUPERATION DRONE {d} ; (LAT : {coords[end_node][0]} ; LON : {coords[end_node][1]})\n"
                         )
                     else:
-                        print(f"ERROR, {event_type} not valid!!!")
+                        continue
                     d_ix[d] += 1
                     drone_events.pop(event)
 
@@ -269,7 +281,7 @@ class VRPWDSolution:
                     str_d = prev_event[-1]
                     d = int(str_d)
                     f.write(
-                        f"{next_time} ; LARGAGE DRONE {d} POUR LIVRAISON COLIS ID : [à spécifier] ; (LAT : {coords[act[1]][0]} ; LON : {coords[act[1]][1]})\n"
+                        f"{next_time} ; LARGAGE DRONE {d} POUR LIVRAISON COLIS ID : {drone_routes[d][d_ix[d]][1]} ; (LAT : {coords[act[1]][0]} ; LON : {coords[act[1]][1]})\n"
                     )
                     drone_events[str_d + "_go"] = (
                         next_time + drone_routes[d][d_ix[d]][2]
@@ -284,6 +296,7 @@ class VRPWDSolution:
                     )
 
                 # Dealing with implicit drone events happening at the exact current time
+                # (only those that were inelligible during previous for loop over drone_events)
                 for event in list(drone_events.keys()):
                     if drone_events[event] > next_time:
                         break
@@ -291,16 +304,15 @@ class VRPWDSolution:
                     event_type = event[2:]
                     if event_type == "go":
                         f.write(
-                            f"{drone_events[event]} ; LIVRAISON DRONE {d} COLIS ID : [à specifier]\n"
+                            f"{next_time} ; LIVRAISON DRONE {d} COLIS ID : {drone_routes[d][d_ix[d]][1]}\n"
                         )
-                    # careful, recuperation can only be done at stop for case 2, correct that
-                    elif event_type == "back":
+                    elif event_type == "back" and drone_routes[d][d_ix[d]][1] == act[1]:
                         end_node = drone_routes[d][d_ix[d]][1]
                         f.write(
-                            f"{drone_events[event]} ; RECUPERATION DRONE {d} ; (LAT : {coords[end_node][0]} ; LON : {coords[end_node][1]})\n"
+                            f"{next_time} ; RECUPERATION DRONE {d} ; (LAT : {coords[end_node][0]} ; LON : {coords[end_node][1]})\n"
                         )
                     else:
-                        print(f"ERROR, {event_type} not valid!!!")
+                        continue
                     d_ix[d] += 1
                     drone_events.pop(event)
 

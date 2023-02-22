@@ -16,7 +16,7 @@ def create_solution(instance: VRPWDData, tour: list) -> dict:
     }
     for i, x in enumerate(truck_solution[:-1]):
         if x in node_demands.keys() and node_demands[x] > 0.0:
-            solution["truck"].append((x, x, 60 * node_demands[x], node_demands[x]))
+            solution["truck"].append((x, x, 60, node_demands[x]))
         y = truck_solution[i + 1]
         sp = nx.shortest_path(
             instance.graph, x, y, weight="travel_time", method="dijkstra"
@@ -35,7 +35,11 @@ class TSPMIPModel:
         self.__algorithm = "MIP"
         self.model = gp.Model("TSP")
         self.n = len(instance.dpd_time_matrix)
-        self.nodes = [0] + [i for i in range(1, len(instance.dpd_nodes)) if instance.deposit != instance.dpd_nodes[i]]
+        self.nodes = [0] + [
+            i
+            for i in range(1, len(instance.dpd_nodes))
+            if instance.deposit != instance.dpd_nodes[i]
+        ]
         self.time = {
             (i, j): instance.dpd_time_matrix[i][j]
             for i, j in combinations(self.nodes, 2)
@@ -64,7 +68,7 @@ class TSPMIPModel:
         self.model.Params.MIPGap = max_gap
         self.model.Params.Threads = nb_threads
 
-        def subtourelim(model, where):
+        def _subtourelim(model, where):
             if where == GRB.Callback.MIPSOL:
                 # make a list of edges selected in the solution
                 vals = model.cbGetSolution(model._vars)
@@ -72,7 +76,7 @@ class TSPMIPModel:
                     (i, j) for i, j in model._vars.keys() if vals[i, j] > 0.5
                 )
                 # find the shortest cycle in the selected edge list
-                tour = subtour(selected)
+                tour = _subtour(selected)
                 if len(tour) < len(self.nodes):
                     # add subtour elimination constr. for every pair of cities in subtour
                     model.cbLazy(
@@ -81,7 +85,7 @@ class TSPMIPModel:
                     )
 
         # Given a tuplelist of edges, find the shortest subtour
-        def subtour(edges):
+        def _subtour(edges):
             unvisited = self.nodes[:]
             cycle = self.nodes[:]  # Dummy - guaranteed to be replaced
             while unvisited:  # true if list is non-empty
@@ -100,12 +104,12 @@ class TSPMIPModel:
 
         self.model._vars = self.x
         self.model.Params.lazyConstraints = 1
-        self.model.optimize(subtourelim)
+        self.model.optimize(_subtourelim)
 
         # Create solution
         vals = self.model.getAttr("x", self.x)
         selected = gp.tuplelist((i, j) for i, j in vals.keys() if vals[i, j] > 0.5)
-        tour = subtour(selected) + [0]
+        tour = _subtour(selected) + [0]
         solution = create_solution(self.instance, tour)
         # to compute the objective value of the solution we have to sum the travel times
         objective_value = sum(

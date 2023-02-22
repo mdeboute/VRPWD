@@ -11,8 +11,8 @@ from geopy.distance import geodesic
 from utils import verbose_print
 
 
-class VRPWDData(object):
-    """This class is used to store the instance information"""
+class VRPWDData:
+    """This class is used to store the instance information of the VRPWD problem."""
 
     def __init__(self, instance_dir: str, case: int, verbose: bool):
         self.__MAP_PATH = Path(instance_dir).joinpath("map.json")
@@ -135,15 +135,14 @@ class VRPWDData(object):
             # Find nearest node with K-D Tree
             _, nearest_node = tree.query(point)
             nearest_node = nearest_node + 1
-            # update the demand
-            # in the graph
+            # update the demand in the graph
             graph.nodes[nearest_node].update({"demand": demand})
             # in the df
             self.__gdf_nodes.loc[nearest_node, "demand"] = demand
         # add deposit
-        deposit_gps = (44.8500102, 0.5370699)
+        _deposit_gps = (44.8500102, 0.5370699)
         # Find nearest node with K-D Tree
-        _, nearest_node = tree.query(deposit_gps)
+        _, nearest_node = tree.query(_deposit_gps)
         nearest_node = nearest_node + 1
         # update the deposit
         # in the Data object
@@ -230,7 +229,6 @@ class VRPWDData(object):
     def save_map_html(self):
         """Plot the nodes on a interactive html map"""
 
-        list_coords = []
         # Create map
         m = folium.Map(location=[44.838633, 0.540983], zoom_start=13)
         # Add points to the map according to the demand

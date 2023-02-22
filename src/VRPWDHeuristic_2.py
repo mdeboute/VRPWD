@@ -73,9 +73,9 @@ class VRPWDHeuristic_2:
 
     def second_stage_v2(self,node_vehicle_dict):
         # create dict to update the demandd
-        solution = {"truck":[]}
-        for i in range(1,self.number_of_drones+1):
-            solution.setdefault("drone_{}".format(i),[])
+        solution = {"truck": []}
+        for i in range(1, self.number_of_drones + 1):
+            solution.setdefault("drone_{}".format(i), [])
         print(solution)
         demand_dict = {}
         for node in self.instance.graph.nodes:
@@ -144,7 +144,7 @@ class VRPWDHeuristic_2:
         #launched_drones = [False if drone_target_list[i] is None else True for i in range(self.number_of_drones)]
         truck_chrono=[0 for i in range(1,self.number_of_drones+1)]
         truck_destination = sp_truck[-1]
-        print('demand_dict : ',demand_dict)
+        print("demand_dict : ", demand_dict)
         print("truck destination : ", truck_destination)
         print('truck tt = ',truck_tt)
         #if there is drone to launch
@@ -262,12 +262,11 @@ class VRPWDHeuristic_2:
                     
     def calculate_obj_value(self,solution):
         """compute objective value for the heuristic solution"""
-        truck_tour=solution['truck']
-        total_time=0
+        truck_tour = solution["truck"]
+        total_time = 0
         for move in truck_tour:
-            total_time+=move[2]
+            total_time += move[2]
         return total_time
-
 
     def solve(self) -> VRPWDSolution:
         print("==============SOLVE================")
@@ -279,8 +278,8 @@ class VRPWDHeuristic_2:
         print('ordoned demand nodes : ',self.ordoned_demands_nodes)
         print('ordoned super nodes : ',self.ordoned_super_nodes)
         print("==========================================")
-        objective_value=self.calculate_obj_value(solution)
-        print('objective value : ',objective_value)
+        objective_value = self.calculate_obj_value(solution)
+        print("objective value : ", objective_value)
         end_time = time.time()
         processing_time = end_time - start_time
         print("processing time : {} s".format(processing_time))
