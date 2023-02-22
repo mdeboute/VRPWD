@@ -7,48 +7,71 @@ from VRPWDSolution import VRPWDSolution
 
 
 class VRPWDHeuristic_2:
-    def __init__(self, instance: VRPWDData, number_of_drones: int):
+    def __init__(self, instance: VRPWDData, number_of_drones: int, policy: str):
         self.instance = instance
+        self._available_policies=['drone_inter', 'truck_inter','mix']
+        self.policy=policy
+        if self.policy not in self._available_policies:
+            raise Exception("ERROR, this policy is not available")
         self.__algorithm = "Greedy"
-        self.ordened_demands_nodes = []
+        self.ordoned_demands_nodes = []
         self.number_of_drones = number_of_drones
         self.init_sol = TSPMIPModel(self.instance).solve()
 
-    def first_stage(self):
-        """first stage part of the heuristic
-        -given the TSP solution, affect the k drones to the k first nodes
-        while the truck goes to the k+1th node etc"""
+    def first_stage_v2(self):
         print("deposit : ", self.instance.deposit)
         print("initial sol : ", self.init_sol)
         number_of_drones = 2
         number_of_vehicles = number_of_drones + 1
+        super_nodes_dict={}
+        demand_dict = {}
+        for node in self.instance.graph.nodes:
+            if self.instance.graph.nodes[node]["demand"] >= 1:
+                demand_dict[node] = self.instance.graph.nodes[node]["demand"]
+            if self.instance.graph.nodes[node]["demand"] >1:
+                super_nodes_dict[node] =self.instance.graph.nodes[node]["demand"]
+
         dpd_nodes_per_vehicle = (
             {}
         )  # dict {0:[...], 1:[...], ..., k:[...]} with 0 is the truck dpd nodes list and the other drone dpd nodes list
         print("solution : ", self.init_sol.solution["truck"])
         print("dpd nodes : ", self.instance.dpd_nodes)
+        print('len(demand_node) : ',len(self.instance.dpd_nodes))
+        print('super node : ',super_nodes_dict)
+        print('len super node : ',len(super_nodes_dict))
         for i in range(len(self.init_sol.solution["truck"]) - 1):
             if (
                 self.init_sol.solution["truck"][i][1] in self.instance.dpd_nodes[1:]
                 and self.init_sol.solution["truck"][i][1]
-                not in self.ordened_demands_nodes
+                not in self.ordoned_demands_nodes
             ):
-                self.ordened_demands_nodes.append(self.init_sol.solution["truck"][i][1])
-        self.ordened_demands_nodes.append(self.instance.deposit)
-        self.ordened_demands_nodes.insert(0, self.instance.deposit)
-        print("ordened demand node : ", self.ordened_demands_nodes)
+                self.ordoned_demands_nodes.append(self.init_sol.solution["truck"][i][1])
+        #in case of deposit is a demand node
+        if self.instance.deposit not in self.ordoned_demands_nodes:
+            self.ordoned_demands_nodes.insert(0, self.instance.deposit)
+        self.ordoned_demands_nodes.append(self.instance.deposit)
+        
+        print("ordened demand node : ", self.ordoned_demands_nodes)
+        ordoned_super_nodes=[k for k in self.ordoned_demands_nodes if k in super_nodes_dict.keys()]
+        self.ordoned_super_nodes=ordoned_super_nodes
+        print('ordoned super nodes : ',ordoned_super_nodes)
+        node_vehicle_dict={}
         for i in range(number_of_vehicles):
-            dpd_nodes_per_vehicle[i] = []
-            for node in self.ordened_demands_nodes:
-                if self.ordened_demands_nodes.index(node) % number_of_vehicles == i:
-                    dpd_nodes_per_vehicle[i].append(node)
-        print(dpd_nodes_per_vehicle)
+            dpd_nodes_per_vehicle[i]=[]
+        begin=0
+        for node in self.ordoned_demands_nodes:
+            if node in self.ordoned_super_nodes or node==self.instance.deposit:
+                node_vehicle_dict[node]=0
+                begin=1
+            else:
+                node_vehicle_dict[node]=begin
+                begin+=1
+                if begin==3:
+                    begin=0
+        print('node vehicle dict : ',node_vehicle_dict)
+        return node_vehicle_dict
 
-        return dpd_nodes_per_vehicle
-
-    def second_stage(self, dpd_nodes_per_vehicle):
-        """find the best node to launch drones within each sp between two truck visited demande nodes"""
-        print("===============SECOND STAGE==============")
+    def second_stage_v2(self,node_vehicle_dict):
         # create dict to update the demandd
         solution = {"truck":[]}
         for i in range(1,self.number_of_drones+1):
@@ -59,252 +82,184 @@ class VRPWDHeuristic_2:
             if self.instance.graph.nodes[node]["demand"] >= 1:
                 demand_dict[node] = self.instance.graph.nodes[node]["demand"]
         print("demand_dict : ", demand_dict)
-        # get each move that the truc will do in term of demand node
-        pair_by_pair_truck_dpd_nodes = [
-            (dpd_nodes_per_vehicle[0][i], dpd_nodes_per_vehicle[0][i + 1])
-            for i in range(len(dpd_nodes_per_vehicle[0]) - 1)
-        ]
-        print("result = ", pair_by_pair_truck_dpd_nodes)
-        # where to launch drones
-        # loop over the sp
-        # compute shortest path
-        counter = 0
-        for src_dest in pair_by_pair_truck_dpd_nodes:
-            print("-----NEW TRUCK DESTINATION----")
-            print(
-                "index du node {} : {}".format(
-                    src_dest[0], self.instance.dpd_nodes.index(src_dest[0])
-                )
-            )
-            print(
-                "index du node {} : {}".format(
-                    src_dest[1], self.instance.dpd_nodes.index(src_dest[1])
-                )
-            )
-            self.instance.dpd_time_matrix[self.instance.dpd_nodes.index(src_dest[0])][
-                self.instance.dpd_nodes.index(src_dest[0])
-            ]
-            sp_truck = nx.shortest_path(
-                self.instance.graph, src_dest[0], src_dest[1], weight="travel_time"
-            )
-            sp_truck_tt = nx.shortest_path_length(
-                self.instance.graph, src_dest[0], src_dest[1], weight="travel_time"
-            )
-            print("pcc entre les deux : ", sp_truck)
-            print("with a tt : {} s".format(sp_truck_tt))
-            # find the launching node for each drone
-            min_d_tt = [1000000000 for i in range(1, self.number_of_drones + 1)]
-            min_d_node = [None for i in range(1, self.number_of_drones + 1)]
-            d_back_to_truck_time = [None for i in range(1, self.number_of_drones + 1)]
-            drone_target_list=[]
-            print("min_d_tt : ", min_d_tt)
-            for key in range(1, self.number_of_drones + 1):
-                if src_dest[1]==self.instance.deposit and all(v==0 for v in demand_dict.values()):
-                    #add truck move node and return the solution
-                    final_move_truck_event=(src_dest[0], src_dest[1],round(sp_truck_tt,3))
-                    solution['truck'].append(final_move_truck_event)
-                    return solution
-                else:
-                    drone_target=dpd_nodes_per_vehicle[key][counter]
-                drone_target_list.append(drone_target)
-                print("key = ", key)
-                print(
-                    "drone {} target : {}".format(
-                        key, drone_target
-                    )
-                )
-                for current_truck_node in sp_truck:
-                    #print("current_truck_node : ", current_truck_node)
-                    sp_d = self.instance.drone_time_matrix[current_truck_node - 1][
-                        drone_target - 1
-                    ]
-                    #print("sp_d = ", sp_d)
-                    if sp_d < min_d_tt[key - 1]:
-                        #print("better")
-                        min_d_tt[key - 1] = sp_d
-                        min_d_node[key - 1] = current_truck_node
-                d_back_to_truck_time[key - 1] = self.instance.drone_time_matrix[
-                    min_d_node[key - 1] - 1
-                ][sp_truck[-1]]
-            # here the best nodes are founded
-            for o, a, b in zip(
-                [i for i in range(1, self.number_of_drones + 1)], min_d_node, min_d_tt
-            ):
-                print("best d{} node : {} with {} s".format(o, a, b))
-            print("min_d_tt : ", min_d_tt)
-            print("min_d_node", min_d_node)
-            print("d_back_to_truck_time : ", d_back_to_truck_time)
-            print('drone_target_list : ',drone_target_list)
-            # create solution
-            self.create_solution(
-                solution,
-                sp_truck,
-                min_d_node,
-                min_d_tt,
-                d_back_to_truck_time,
-                drone_target_list,
-                demand_dict,
-            )
-            counter+=1
+        count=0
+        truck_pair_dpd_nodes=[]
+        for node in self.ordoned_demands_nodes:
+            node_vehicle=node_vehicle_dict[node]
+            if node_vehicle==0:
+                truck_pair_dpd_nodes.append(node)
+                print('truck_pair_dpd_nodes : ',truck_pair_dpd_nodes)
+                if len(truck_pair_dpd_nodes)==2:
+                    sp_truck=nx.shortest_path(self.instance.graph,truck_pair_dpd_nodes[0],truck_pair_dpd_nodes[-1],weight="travel_time")
+                    entire_dpd_nodes=[x for x in self.ordoned_demands_nodes if self.ordoned_demands_nodes.index(x)>=self.ordoned_demands_nodes.index(truck_pair_dpd_nodes[0]) 
+                    and self.ordoned_demands_nodes.index(x)<=self.ordoned_demands_nodes.index(truck_pair_dpd_nodes[1])]
+                    if node !=self.instance.deposit and entire_dpd_nodes[-1]==self.instance.deposit:
+                        entire_dpd_nodes.pop(-1)
+                    #we arrive at the end list-> entire dpd node is the starting truck node until the end of the list
+                    if node==self.instance.deposit:
+                        entire_dpd_nodes=self.ordoned_demands_nodes[self.ordoned_demands_nodes.index(truck_pair_dpd_nodes[0]):]
+                    print('ordoned demand nodes : ',self.ordoned_demands_nodes)
+                    print('ordoned super nodes : ',self.ordoned_super_nodes)
+                    print('entire_dpd_nodes : ',entire_dpd_nodes)
+                    print('------NEW TRUCK DEST------')
+                    drone_target=[None for i in range(self.number_of_drones)]
+                    go_tt_list=[None for i in range(self.number_of_drones)]
+                    back_tt_list=[None for i in range(self.number_of_drones)]
+                    #if there is drone to launch
+                    if len(entire_dpd_nodes)>2:
+                        for node in entire_dpd_nodes:
+                            if node not in truck_pair_dpd_nodes:
+                                node_vehicle=node_vehicle_dict[node]
+                                drone_target[node_vehicle-1]=node
+                                #compute travel time
+                                go=self.instance.drone_time_matrix[truck_pair_dpd_nodes[0]-1][node-1]
+                                go_tt_list[node_vehicle-1]=go
+                                back=self.instance.drone_time_matrix[node-1][truck_pair_dpd_nodes[1]-1]
+                                back_tt_list[node_vehicle-1]=back
+                    print('drone target : ',drone_target)
+                    print('go_tt_list : ',go_tt_list)
+                    print('back_tt_list : ',back_tt_list)
+                    print('all demand satisfied ? : ',all(v==0 for v in demand_dict.values()))
+                    print(demand_dict)
+                    self.create_solution(solution,sp_truck,drone_target,go_tt_list,back_tt_list,demand_dict)
+                    truck_pair_dpd_nodes=[truck_pair_dpd_nodes[-1]]
+        print('if all demand satisfied ? : ',all(v==0 for v in demand_dict.values()))
+        return solution
 
     def create_solution(
         self,
         solution,
         sp_truck,
-        min_d_node,
-        min_d_tt,
-        d_back_to_truck_time,
         drone_target_list,
+        go_tt_list,
+        back_tt_list,
         demand_dict
     ):
         """create the solution for truck and drone, for current sp truck move"""
         print("-------CREATE SOLUTION -------")
         preparing_drone_time = 30
         delivering_truck_time = 60
+        truck_tt=0
+        launched_drones=[False for i in range(self.number_of_drones)]
+        #launched_drones = [False if drone_target_list[i] is None else True for i in range(self.number_of_drones)]
+        truck_chrono=[0 for i in range(1,self.number_of_drones+1)]
         truck_destination = sp_truck[-1]
         print('demand_dict : ',demand_dict)
         print("truck destination : ", truck_destination)
-        # compute reaching time to common destination
-        drone_reaching_cdest_time = [
-            round(a + b, 3) for a, b in zip(min_d_tt, d_back_to_truck_time)
-        ]
-        print("drone_reaching_cdest_time : ", drone_reaching_cdest_time)
-        # is truck at destination ie demand node ? ->deliver demand
-        # by def, the truck only deliver the truck destination node, so if it travel another demand node, it wont deliver it
-        for current_truck_node in sp_truck:
-            print("current_truck_node :", current_truck_node)
-            indices = []  # list in which current node
-            for i, item in enumerate(min_d_node):
-                #print("i : ", i + 1)
-                #print("item : ", item)
-                if item == current_truck_node:
-                    indices.append(i + 1)
-            #print("indices : ", indices)
-            # if drone to launch from this node
-            nb_drones_to_launch = len(indices)
-            if nb_drones_to_launch != 0:
-                print("--------LAUNCHING NODE---------")
-                for i in indices:
-                    if len(solution["truck"]) == 0:
-                        starting_node = self.instance.deposit
-                    else:
-                        starting_node = solution["truck"][-1][1]
-                    # create the move truck event
-                    tt = nx.shortest_path_length(
-                        self.instance.graph,
-                        starting_node,
-                        current_truck_node,
-                        weight="travel_time",
-                    )
-                    truck_move_event = (starting_node, current_truck_node, round(tt,3))
-                    if tt != 0:
-                        print("move truck event : ", truck_move_event)
-                        solution["truck"].append(truck_move_event)
-                    # create the event preparing drone event
-                    preparing_event = (
-                        current_truck_node,
-                        current_truck_node,
-                        preparing_drone_time,
-                        "d{}".format(i),
-                    )
-                    print("preparing_event : ", preparing_event)
-                    # add it to the truck solution
-                    solution["truck"].append(preparing_event)
-                    # create drone move to reach the dpd node
-                    drone_move1_event = (
-                        current_truck_node,
-                        drone_target_list[i - 1],
-                        round(min_d_tt[i - 1],3),
-                    )
-                    # create drone move to come back to the truck
-                    drone_move2_event = (
-                        drone_target_list[i - 1],
-                        truck_destination,
-                        round(d_back_to_truck_time[i - 1],3),
-                    )
-                    solution["drone_{}".format(i)].append(drone_move1_event)
-                    solution["drone_{}".format(i)].append(drone_move2_event)
-                    # print('solution[{}] : {}'.format(i,solution[str(i)]))
-                    # update the demand
-                    demand_dict[current_truck_node] = 0
-                    demand_dict[drone_target_list[i - 1]] = 0
-                    # does the drone need to wait for truck ?
+        print('truck tt = ',truck_tt)
+        #if there is drone to launch
+        if not all(t==None for t in drone_target_list):
+            #check if there is a drone demand node over the truck sp -> the reaction depends of the policy
+            for node in sp_truck:
+                if node in drone_target_list:
+                    drone_number=drone_target_list.index(node)+1
+                    print('the node {} (for d{}) is in the truck sp'.format(node,drone_number))
+                    if self.policy=='truck_inter':
+                        pass
+                    elif self.policy=='mix':
+                        pass
+            #drone which are not launched yet (ie drone inter policy and other)
+            for d in launched_drones:
+                if not d and drone_target_list[launched_drones.index(d)]!=None:
+                    drone_number=launched_drones.index(d)+1
+                    #create truck launch event
+                    lauching_drone_event=(sp_truck[0],sp_truck[0],preparing_drone_time,'d{}'.format(drone_number))
+                    print('lauching_drone_event: ',lauching_drone_event)
+                    solution['truck'].append(lauching_drone_event)
+                    print('truck_chrono before : ',truck_chrono)
+                    truck_chrono=[truck_chrono[i] + preparing_drone_time if launched_drones[i] else truck_chrono[i] for i in range(self.number_of_drones)]
+                    print('truck_chrono after : ',truck_chrono )                    
+                    launched_drones[drone_number-1]=True
+                    #create drone go move
+                    drone_go_move=(sp_truck[0],drone_target_list[drone_number-1],go_tt_list[drone_number-1])
+                    solution['drone_{}'.format(drone_number)].append(drone_go_move)
+                    #update demand
+                    demand_dict[drone_target_list[drone_number-1]]-=1
+                    #create drone back to truck move
+                    drone_back_move=(drone_target_list[drone_number-1],truck_destination,back_tt_list[drone_number-1])
+                    solution['drone_{}'.format(drone_number)].append(drone_back_move)
+        #drone are launched or there is no drone to launch -> truck move toward its destination
+        for node in sp_truck:
+            if len(solution["truck"]) == 0:
+                starting_node = self.instance.deposit
             else:
-                if current_truck_node == truck_destination:
-                    print("------TRUCK ON DESTINATION NODE------")
-                    print("demand : ", demand_dict[current_truck_node])
-                    time_to_deliver_demand = (
-                        delivering_truck_time * demand_dict[current_truck_node]
-                    )
-                    print("time_to_deliver_demand = ", time_to_deliver_demand)
-                    if len(solution["truck"]) == 0:
-                        starting_node = self.instance.deposit
-                    else:
-                        starting_node = solution["truck"][-1][1]
-                    # create the truck move event
-                    tt = nx.shortest_path_length(
-                        self.instance.graph,
-                        starting_node,
-                        current_truck_node,
-                        weight="travel_time",
-                    )
-                    move_truck_event = (starting_node, current_truck_node, round(tt,3))
-                    # add it to the truck solution
-                    if tt != 0:
-                        solution["truck"].append(move_truck_event)
-                    # create the delivery event
-                    delivery_event = (
-                        current_truck_node,
-                        current_truck_node,
-                        time_to_deliver_demand,
-                        demand_dict[current_truck_node],
-                    )
-                    print(solution["truck"])
-                    tt_last_launching_to_dest_plus_deliver = (
-                        solution["truck"][-1][2] + time_to_deliver_demand
-                    )
-                    print("solution[truck][-1][2] : ",solution["truck"][-1][2])
-                    print('time_to_deliver_demand : ',time_to_deliver_demand)
-                    # add it to the truck solution
-                    solution["truck"].append(delivery_event)
-                    #print("solution 0 :", solution["0"])
-                    # update demand in the dict
-                    demand_dict[current_truck_node] = 0
-                    # does the truck need to wait for drone ?
-                    max_drone_time = max(drone_reaching_cdest_time)
-                    print('max drone time : ',max_drone_time)
-                    print(
-                        "tt_last_launching_to_dest_plus_deliver = ",
-                        tt_last_launching_to_dest_plus_deliver,
-                    )
-                    #print("max_drone_time = ", max_drone_time)
-                    # real_tt_truck_to_dest=nx.shortest_path_length(self.instance.graph,sp_truck[0],sp_truck[-1],weight='travel_time')+self.number_of_drones*preparing_drone_time
-                    if max_drone_time > tt_last_launching_to_dest_plus_deliver:
-                        waiting_time = (
-                            max_drone_time - tt_last_launching_to_dest_plus_deliver
-                        )
-                        waiting_truck_event = (
-                            sp_truck[-1],
-                            sp_truck[-1],
-                            round(waiting_time, 3),
-                        )
-                        solution["truck"].append(waiting_truck_event)
-                    elif max_drone_time < tt_last_launching_to_dest_plus_deliver:
-                        for time in drone_reaching_cdest_time:
-                            if time < tt_last_launching_to_dest_plus_deliver:
-                                waiting_drone_time = (
-                                    tt_last_launching_to_dest_plus_deliver - time
-                                )
-                                waiting_drone_event = (
-                                    current_truck_node,
-                                    current_truck_node,
-                                    round(waiting_drone_time,3),
-                                )
-                                solution[
-                                    "drone_{}".format(drone_reaching_cdest_time.index(time) + 1)
-                                ].append(waiting_drone_event)
-        print(solution)
-        
+                starting_node = solution["truck"][-1][1]
+            #create move event
+            tt=round(nx.shortest_path_length(self.instance.graph,starting_node,node,weight='travel_time'),3)
+            if tt!=0:
+                move_event=(starting_node,node,tt)
+                print('move event : ',move_event)
+                solution['truck'].append(move_event)
+                truck_chrono=[truck_chrono[i] + tt if launched_drones[i] else truck_chrono[i] for i in range(self.number_of_drones)]
+            if node==truck_destination:
+                print('-------DESTINATION NODE-------')
+                if node in demand_dict.keys():
+                    print("demand : ", demand_dict[node])
+                    print('truck_chrono before delivery',truck_chrono)
+                    #create delivery event
+                    delivery_event=(node,node,delivering_truck_time)
+                    print('delivery event : ',delivery_event)
+                    truck_chrono=[truck_chrono[i] + delivering_truck_time if launched_drones[i] else truck_chrono[i] for i in range(self.number_of_drones)]
+                    solution['truck'].append(delivery_event)
+                    #update demand
+                    demand_dict[node]=0
+                #deal with waiting time
+                #split drone arrival into 2 list : before truck arrival and after truck arrival
+                if not all(t==None for t in drone_target_list):
+                    before_truck=[]
+                    after_truck=[]
+                    truck_chrono_for_compared=[]
+                    drone_tt=[a+b for a,b in zip(go_tt_list,back_tt_list) if a!=None and b!=None]
+                    print('deal with waiting times')
+                    print('drone tt : ',drone_tt)
+                    print('truck_chrono : ',truck_chrono)
+                    for time_t,time_d in zip(truck_chrono,drone_tt): 
+                        if time_t !=None and time_d !=None and time_t<=time_d:
+                            after_truck.append(time_d)
+                            truck_chrono_for_compared.append(time_t)
+                        elif time_t !=None and time_d !=None and time_t>time_d:
+                            before_truck.append(time_d)
+                    print('before_truck : ',before_truck)
+                    print('after_truck : ',after_truck)
+                    print('truck_chrono : ',truck_chrono)
+                    print('drone_tt : ',drone_tt)
+                    #case 1 -> drones wait for the truck
+                    if len(before_truck)!=0:
+                        print('drone(s) wait for truck')
+                        #compute waiting time for each drone
+                        for time in before_truck:
+                            print('time : ',time)
+                            drone_index=drone_tt.index(time)+1
+                            print('drone index : ',drone_index)
+                            d_waiting_time=truck_chrono[drone_index-1]-time
+                            print('waiting time drone : ',d_waiting_time)
+                            if d_waiting_time!=0:
+                                if d_waiting_time<0:
+                                    print('drone waiting time : ',d_waiting_time)
+                                    print('truck chrono : ',truck_chrono)
+                                    print('drone tt time :',drone_tt)
+                                    raise Exception('ERROR , drone waiting time <0')
+                            else:
+                                waiting_drone_event=(truck_destination,truck_destination,round(d_waiting_time,3))
+                                print('waiting_drone_{}_event : {}'.format(drone_index,waiting_drone_event))
+                                #add it to the solution
+                                solution['drone_{}'.format(drone_index)].append(waiting_drone_event) 
+                    #case 2-> truck waits for drones 
+                    if len(after_truck)!=0:
+                            print('truck waits for drones')
+                            truck_waiting_time=max([d-t for d,t in zip(after_truck,truck_chrono_for_compared)])
+                            print('truck waiting time : ',truck_waiting_time)
+                            if truck_waiting_time<0:
+                                print('truck waiting time : ',truck_waiting_time)
+                                print('truck chrono : ',truck_chrono)
+                                print('drone tt time :',drone_tt)
+                                raise Exception('ERROR , drone waiting time <0')
+                                
+                            else:
+                                waiting_truck_event=(truck_destination,truck_destination,round(truck_waiting_time,3))
+                                print('waiting_truck_event : ',waiting_truck_event)
+                                solution['truck'].append(waiting_truck_event)            
+                    
     def calculate_obj_value(self,solution):
         """compute objective value for the heuristic solution"""
         truck_tour=solution['truck']
@@ -315,17 +270,19 @@ class VRPWDHeuristic_2:
 
 
     def solve(self) -> VRPWDSolution:
+        print("==============SOLVE================")
         start_time = time.time()
-        dpd_nodes_per_vehicle = self.first_stage()
-        solution=self.second_stage(dpd_nodes_per_vehicle)
+        node_vehicle_dict = self.first_stage_v2()
+        solution=self.second_stage_v2(node_vehicle_dict)
         print("==========================================")
         print(solution)
+        print('ordoned demand nodes : ',self.ordoned_demands_nodes)
+        print('ordoned super nodes : ',self.ordoned_super_nodes)
         print("==========================================")
         objective_value=self.calculate_obj_value(solution)
         print('objective value : ',objective_value)
         end_time = time.time()
         processing_time = end_time - start_time
-        print('demande nodes per vehicles : ',dpd_nodes_per_vehicle)
         print("processing time : {} s".format(processing_time))
         return VRPWDSolution(
             instance=self.instance,
