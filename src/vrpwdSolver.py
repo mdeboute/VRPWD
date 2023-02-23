@@ -24,7 +24,7 @@ def print_usage():
     print("\t\tmip")
     print("\tFor case 2:")
     print("\t\theuristic (h for short)")
-    print("\t\tpathheuristic")
+    print("\t\tpathheuristic (ph for short)")
     print("\tFor case 3:")
     print("\t\theuristic (h for short)")
     print(
@@ -58,9 +58,12 @@ def main():
         method != "heuristic"
         and method != "h"
         and method != "pathheuristic"
+        and method != "ph"
         and method != "mip"
     ):
-        print("Method should be heuristic (h for short), pathheuristic or mip!")
+        print(
+            "Method should be heuristic (h for short), pathheuristic (ph for short) or mip!"
+        )
         print("Please use -h or --help to see the usage")
         sys.exit(1)
 
@@ -131,7 +134,7 @@ def main():
                 solution.write()
             if plot:
                 solution.plot()
-        if method == "pathheuristic":
+        if method == "pathheuristic" or method == "ph":
             solution = VRPWDPathHeuristic_2(data).solve()
             if solution.check():
                 print(

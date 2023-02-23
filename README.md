@@ -9,6 +9,10 @@ For the main program:
 
 Type `python3 src/vrpwdSolver.py -h` for help.
 
+For the benchmark (don't forget to do a `chmod +x benchmark.sh`):
+
+Type ./benchmark.sh -h for help.
+
 ## Social Networks
 
 * Notion [here](https://www.notion.so/astral-agency/7a1486aff5da4701940d0b423bcd0d48?v=c1946cbaf6884adaa18bbe71a7ccfa28)
