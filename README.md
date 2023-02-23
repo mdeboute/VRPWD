@@ -13,12 +13,6 @@ For the benchmark (don't forget to do a `chmod +x benchmark.sh`):
 
 Type ./benchmark.sh -h for help.
 
-## Social Networks
-
-* Notion [here](https://www.notion.so/astral-agency/7a1486aff5da4701940d0b423bcd0d48?v=c1946cbaf6884adaa18bbe71a7ccfa28)
-* Overleaf [here](https://l.messenger.com/l.php?u=https%3A%2F%2Fwww.overleaf.com%2F7247433974xnjmmvhzkqjr&h=AT39ufLhpJ7YwqAEoy17tP6CHyWdVP04OskifxIjZ9HtbnHy20vQbn_LDfzb77Vj1WULdPhleb8o7u-tvfjc2s3SOwLTrcYbQ2WKL_SfrGcR3vRCU8gy3VYFH7WlVGtJiAlA9KMzug8)
-* Discord [here](https://discord.gg/NDpJqBMm)
-
 ## Coding Rules
 
 To ensure consistency throughout the source code, keep these rules in mind as you are working:
