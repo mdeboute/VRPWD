@@ -18,6 +18,7 @@ class VRPWDHeuristic_2:
         self.ordoned_demands_nodes = []
         self.number_of_drones = number_of_drones
         self.init_sol = TSPMIPModel(self.instance).solve()
+
         global vprint
         vprint = verbose_print(self.instance._VERBOSE)
 
@@ -373,10 +374,14 @@ class VRPWDHeuristic_2:
         vprint("ordoned_super_nodes:", self.ordoned_super_nodes)
         vprint("==========================================")
         objective_value = self._calculate_obj_value(solution)
-        vprint("objective_value:", objective_value)
         end_time = time.time()
         processing_time = end_time - start_time
-        vprint("processing_time: {} s".format(processing_time))
+        vprint(f"Processing_time: {processing_time}sec")
+        vprint(f"Initial objective value: {self.init_sol.objective_value}")
+        vprint(f"New objective value: {objective_value}")
+        vprint(
+            f"So a decrease of: {(self.init_sol.objective_value - objective_value) / self.init_sol.objective_value * 100:.2f}%"
+        )
 
         return VRPWDSolution(
             instance=self.instance,

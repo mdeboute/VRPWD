@@ -6,7 +6,7 @@ from core.VRPWDData import VRPWDData
 from algorithms.tsp.TSPMIPModel import TSPMIPModel
 from core.VRPWDSolution import VRPWDSolution
 from gurobipy import GRB
-from core.utils import available_cpu_count
+from core.utils import available_cpu_count, verbose_print
 
 
 class VRPWDPathHeuristic_2:
@@ -23,6 +23,9 @@ class VRPWDPathHeuristic_2:
             self.init_sol["truck"].insert(
                 0, (instance.deposit, instance.deposit, 0.0, 0.0)
             )
+
+        global vprint
+        vprint = verbose_print(self.instance._VERBOSE)
 
     def _create_solution(self, selected_paths: dict, gained_time):
         solution = {"truck": [], "drone_1": [], "drone_2": []}
@@ -296,6 +299,12 @@ class VRPWDPathHeuristic_2:
         )
         runtime = self.init_runtime + preprocess_time + model.Runtime
         gap = model.MIPGap * 100
+
+        vprint(f"Initial objective value: {self.init_sol.objective_value}")
+        vprint(f"New objective value: {objective_value}")
+        vprint(
+            f"So a decrease of: {(self.init_sol.objective_value - objective_value) / self.init_sol.objective_value * 100:.2f}%\n"
+        )
 
         if model.Status == GRB.OPTIMAL:
             return VRPWDSolution(

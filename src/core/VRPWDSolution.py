@@ -1,6 +1,5 @@
 import networkx as nx
 import matplotlib.pyplot as plt
-import time
 
 from pathlib import Path
 from core.utils import verbose_print
@@ -53,7 +52,6 @@ class VRPWDSolution:
         """Create the graph format of the solution"""
 
         vprint("=================== CREATE GRAPH SOLUTION ===================")
-        start_time = time.time()
         # get solutions for each type  of vehicle
         truck_tour = self.solution["truck"]
         number_of_drones = 2
@@ -111,10 +109,7 @@ class VRPWDSolution:
                         graph.add_edge(
                             src, dest, travel_time=tt, vehicle="drone_{}".format(i + 1)
                         )
-        end_time = time.time()
-        processing_time = end_time - start_time
         vprint("graph:", graph)
-        vprint("processing time:", processing_time)
         return graph
 
     def plot(self):
