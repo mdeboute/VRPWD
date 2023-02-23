@@ -102,8 +102,6 @@ class VRPWDReducedMIPModel_1:
         }
         self.max_demand = {(i, j): self.demand[j] for i, j in self.drone_time.keys()}
 
-        pass
-
         # Variables:
         self.x = self.model.addVars(
             self.road_time.keys(), obj=self.road_time, vtype=GRB.BINARY, name="x"
@@ -322,12 +320,6 @@ class VRPWDReducedMIPModel_1:
         )
         runtime = self.model.Runtime
         gap = self.model.MIPGap * 100
-
-        vprint(f"Initial objective value: {self.init_sol.objective_value}")
-        vprint(f"New objective value: {objective_value}")
-        vprint(
-            f"So a decrease of: {(self.init_sol.objective_value - objective_value) / self.init_sol.objective_value * 100:.2f}%\n"
-        )
 
         if self.model.Status == GRB.OPTIMAL:
             return VRPWDSolution(

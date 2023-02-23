@@ -13,9 +13,9 @@ class VRPWDPathHeuristic_2:
     def __init__(self, instance: VRPWDData):
         self.instance = instance
         self.__algorithm = "Path_Heuristic"
-        tsp_solution = TSPMIPModel(self.instance).solve()
-        self.init_sol = tsp_solution.solution
-        self.init_runtime = tsp_solution.runtime
+        self.tsp_solution = TSPMIPModel(self.instance).solve()
+        self.init_sol = self.tsp_solution.solution
+        self.init_runtime = self.tsp_solution.runtime
         # First and last tuples of truck are (depot, depot, 0, 0) to signal start and stop.
         # Useful for the heuristic
         self.init_sol["truck"].append((instance.deposit, instance.deposit, 0.0, 0.0))
@@ -300,10 +300,10 @@ class VRPWDPathHeuristic_2:
         runtime = self.init_runtime + preprocess_time + model.Runtime
         gap = model.MIPGap * 100
 
-        vprint(f"Initial objective value: {self.init_sol.objective_value}")
+        vprint(f"Initial objective value: {self.tsp_solution.objective_value}")
         vprint(f"New objective value: {objective_value}")
         vprint(
-            f"So a decrease of: {(self.init_sol.objective_value - objective_value) / self.init_sol.objective_value * 100:.2f}%\n"
+            f"So a decrease of: {(self.tsp_solution.objective_value - objective_value) / self.tsp_solution.objective_value * 100:.2f}%\n"
         )
 
         if model.Status == GRB.OPTIMAL:
