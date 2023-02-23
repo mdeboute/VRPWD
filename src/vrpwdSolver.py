@@ -7,6 +7,7 @@ from VRPWDReducedMIPModel_1 import VRPWDReducedMIPModel_1
 from VRPWDHeuristic_1 import VRPWDHeuristic_1
 from VRPWDHeuristic_2 import VRPWDHeuristic_2
 from VRPWDPathHeuristic_2 import VRPWDPathHeuristic_2
+from VRPWDHeuristic_3 import VRPWDHeuristic_3
 from utils import verbose_print
 
 
@@ -114,7 +115,7 @@ def main():
                     solution.plot()
     elif case == 2:
         if method == "heuristic" or method == "h":
-            solution = VRPWDHeuristic_2(data, 2,'drone_inter').solve()
+            solution = VRPWDHeuristic_2(data, 2, "drone_inter").solve()
             # if solution.check():
             #     print(
             #         f"Result: runtime={solution.runtime:.2f}sec; objective={solution.objective_value:.2f}sec"
@@ -133,7 +134,7 @@ def main():
                     solution.plot()
     elif case == 3:
         if method == "heuristic" or method == "h":
-            pass
+            solution = VRPWDHeuristic_3(data).solve()
     else:
         print("Case not implemented yet! Check the usage with -h or --help.")
         sys.exit(1)
