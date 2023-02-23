@@ -3,9 +3,9 @@ import networkx as nx
 
 from gurobipy import GRB
 from itertools import permutations
-from VRPWDData import VRPWDData
-from VRPWDSolution import VRPWDSolution
-from utils import verbose_print, available_cpu_count
+from core.VRPWDData import VRPWDData
+from core.VRPWDSolution import VRPWDSolution
+from core.utils import verbose_print, available_cpu_count
 
 
 class VRPWDReducedMIPModel_1:

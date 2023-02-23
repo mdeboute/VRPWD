@@ -1,16 +1,16 @@
 import networkx as nx
 import time
 
-from VRPWDData import VRPWDData
-from VRPWDSolution import VRPWDSolution
-from TSPMIPModel import TSPMIPModel
-from utils import verbose_print
+from core.VRPWDData import VRPWDData
+from core.VRPWDSolution import VRPWDSolution
+from algorithms.tsp.TSPMIPModel import TSPMIPModel
+from core.utils import verbose_print
 
 
 class VRPWDHeuristic_1:
     def __init__(self, instance: VRPWDData):
         self.instance = instance
-        self.__algorithm = "Greedy"
+        self.__algorithm = "Basic_Greedy"
         self.init_sol = TSPMIPModel(self.instance).solve()
         self.demands_nodes = {
             node: int(self.instance.graph.nodes[node]["demand"])

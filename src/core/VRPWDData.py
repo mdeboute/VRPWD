@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 from scipy.spatial import cKDTree
 from geopy.distance import geodesic
-from utils import verbose_print
+from core.utils import verbose_print
 
 
 class VRPWDData:

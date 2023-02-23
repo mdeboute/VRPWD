@@ -3,14 +3,15 @@ import matplotlib.pyplot as plt
 import time
 
 from pathlib import Path
-from utils import verbose_print
-from VRPWDData import VRPWDData
+from core.utils import verbose_print
+from core.VRPWDData import VRPWDData
 from pathlib import Path
 from itertools import chain
 
 
 class VRPWDSolution:
-    __BASE_DIR = Path(__file__).resolve().parent.parent
+    __BASE_DIR = Path(__file__).resolve().parent.parent.parent
+    print(__BASE_DIR)
 
     def __init__(
         self,

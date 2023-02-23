@@ -3,9 +3,9 @@ import networkx as nx
 
 from gurobipy import GRB
 from itertools import combinations
-from VRPWDData import VRPWDData
-from VRPWDSolution import VRPWDSolution
-from utils import available_cpu_count
+from core.VRPWDData import VRPWDData
+from core.VRPWDSolution import VRPWDSolution
+from core.utils import available_cpu_count
 
 
 def create_solution(instance: VRPWDData, tour: list) -> dict:

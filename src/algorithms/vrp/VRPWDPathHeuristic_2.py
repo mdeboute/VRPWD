@@ -2,11 +2,11 @@ import time
 import gurobipy as gp
 import networkx as nx
 
-from VRPWDData import VRPWDData
-from TSPMIPModel import TSPMIPModel
-from VRPWDSolution import VRPWDSolution
+from core.VRPWDData import VRPWDData
+from algorithms.tsp.TSPMIPModel import TSPMIPModel
+from core.VRPWDSolution import VRPWDSolution
 from gurobipy import GRB
-from utils import available_cpu_count
+from core.utils import available_cpu_count
 
 
 class VRPWDPathHeuristic_2:

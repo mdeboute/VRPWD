@@ -1,9 +1,9 @@
 import numpy as np
 import time
 
-from VRPWDData import VRPWDData
-from VRPWDSolution import VRPWDSolution
-from TSPMIPModel import create_solution
+from core.VRPWDData import VRPWDData
+from core.VRPWDSolution import VRPWDSolution
+from algorithms.tsp.TSPMIPModel import create_solution
 
 
 class TSPGreedy:
@@ -11,7 +11,7 @@ class TSPGreedy:
 
     def __init__(self, instance: VRPWDData):
         self.instance = instance
-        self.__algorithm = "NN_Greedy"
+        self.__algorithm = "Nearest_Neighbor_Greedy"
 
     def solve(self) -> VRPWDSolution:
         """Solve the TSP using the Greedy heuristic."""

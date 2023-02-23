@@ -1,10 +1,10 @@
 import time
 import networkx as nx
 
-from VRPWDData import VRPWDData
-from TSPMIPModel import TSPMIPModel
-from utils import verbose_print
-from VRPWDSolution import VRPWDSolution
+from core.VRPWDData import VRPWDData
+from algorithms.tsp.TSPMIPModel import TSPMIPModel
+from core.utils import verbose_print
+from core.VRPWDSolution import VRPWDSolution
 
 
 class VRPWDHeuristic_2:
@@ -14,14 +14,16 @@ class VRPWDHeuristic_2:
         self.policy = policy
         if self.policy not in self._available_policies:
             raise Exception("ERROR: this policy is not available")
-        self.__algorithm = "Greedy"
+        self.__algorithm = "Super_Node_Greedy"
         self.ordoned_demands_nodes = []
         self.number_of_drones = number_of_drones
         self.init_sol = TSPMIPModel(self.instance).solve()
+        global vprint
+        vprint = verbose_print(self.instance._VERBOSE)
 
-    def first_stage_v2(self):
-        print("deposit : ", self.instance.deposit)
-        print("initial sol : ", self.init_sol)
+    def _first_stage(self):
+        vprint("deposit:", self.instance.deposit)
+        vprint("initial_sol:", self.init_sol)
         number_of_drones = 2
         number_of_vehicles = number_of_drones + 1
         super_nodes_dict = {}
@@ -35,11 +37,11 @@ class VRPWDHeuristic_2:
         dpd_nodes_per_vehicle = (
             {}
         )  # dict {0:[...], 1:[...], ..., k:[...]} with 0 is the truck dpd nodes list and the other drone dpd nodes list
-        print("solution : ", self.init_sol.solution["truck"])
-        print("dpd nodes : ", self.instance.dpd_nodes)
-        print("len(demand_node) : ", len(self.instance.dpd_nodes))
-        print("super node : ", super_nodes_dict)
-        print("len super node : ", len(super_nodes_dict))
+        vprint("solution:", self.init_sol.solution["truck"])
+        vprint("dpd_nodes:", self.instance.dpd_nodes)
+        vprint("len(demand_node):", len(self.instance.dpd_nodes))
+        vprint("super_node:", super_nodes_dict)
+        vprint("len_super_node:", len(super_nodes_dict))
         for i in range(len(self.init_sol.solution["truck"]) - 1):
             if (
                 self.init_sol.solution["truck"][i][1] in self.instance.dpd_nodes[1:]
@@ -52,12 +54,12 @@ class VRPWDHeuristic_2:
             self.ordoned_demands_nodes.insert(0, self.instance.deposit)
         self.ordoned_demands_nodes.append(self.instance.deposit)
 
-        print("ordened demand node : ", self.ordoned_demands_nodes)
+        vprint("ordened_demand_nodes:", self.ordoned_demands_nodes)
         ordoned_super_nodes = [
             k for k in self.ordoned_demands_nodes if k in super_nodes_dict.keys()
         ]
         self.ordoned_super_nodes = ordoned_super_nodes
-        print("ordoned super nodes : ", ordoned_super_nodes)
+        vprint("ordoned_super_nodes:", ordoned_super_nodes)
         node_vehicle_dict = {}
         for i in range(number_of_vehicles):
             dpd_nodes_per_vehicle[i] = []
@@ -71,27 +73,27 @@ class VRPWDHeuristic_2:
                 begin += 1
                 if begin == 3:
                     begin = 0
-        print("node vehicle dict : ", node_vehicle_dict)
+        vprint("node_vehicle_dict:", node_vehicle_dict)
         return node_vehicle_dict
 
-    def second_stage_v2(self, node_vehicle_dict):
+    def _second_stage(self, node_vehicle_dict):
         # create dict to update the demandd
         solution = {"truck": []}
         for i in range(1, self.number_of_drones + 1):
             solution.setdefault("drone_{}".format(i), [])
-        print(solution)
+        vprint(solution)
         demand_dict = {}
         for node in self.instance.graph.nodes:
             if self.instance.graph.nodes[node]["demand"] >= 1:
                 demand_dict[node] = self.instance.graph.nodes[node]["demand"]
-        print("demand_dict : ", demand_dict)
+        vprint("demand_dict:", demand_dict)
         count = 0
         truck_pair_dpd_nodes = []
         for node in self.ordoned_demands_nodes:
             node_vehicle = node_vehicle_dict[node]
             if node_vehicle == 0:
                 truck_pair_dpd_nodes.append(node)
-                print("truck_pair_dpd_nodes : ", truck_pair_dpd_nodes)
+                vprint("truck_pair_dpd_nodes:", truck_pair_dpd_nodes)
                 if len(truck_pair_dpd_nodes) == 2:
                     sp_truck = nx.shortest_path(
                         self.instance.graph,
@@ -117,10 +119,10 @@ class VRPWDHeuristic_2:
                         entire_dpd_nodes = self.ordoned_demands_nodes[
                             self.ordoned_demands_nodes.index(truck_pair_dpd_nodes[0]) :
                         ]
-                    print("ordoned demand nodes : ", self.ordoned_demands_nodes)
-                    print("ordoned super nodes : ", self.ordoned_super_nodes)
-                    print("entire_dpd_nodes : ", entire_dpd_nodes)
-                    print("------NEW TRUCK DEST------")
+                    vprint("ordoned_demand_nodes:", self.ordoned_demands_nodes)
+                    vprint("ordoned_super_nodes:", self.ordoned_super_nodes)
+                    vprint("entire_dpd_nodes:", entire_dpd_nodes)
+                    vprint("------ NEW TRUCK DEST ------")
                     drone_target = [None for i in range(self.number_of_drones)]
                     go_tt_list = [None for i in range(self.number_of_drones)]
                     back_tt_list = [None for i in range(self.number_of_drones)]
@@ -139,15 +141,15 @@ class VRPWDHeuristic_2:
                                     truck_pair_dpd_nodes[1] - 1
                                 ]
                                 back_tt_list[node_vehicle - 1] = back
-                    print("drone target : ", drone_target)
-                    print("go_tt_list : ", go_tt_list)
-                    print("back_tt_list : ", back_tt_list)
-                    print(
-                        "all demand satisfied ? : ",
+                    vprint("drone_target:", drone_target)
+                    vprint("go_tt_list:", go_tt_list)
+                    vprint("back_tt_list:", back_tt_list)
+                    vprint(
+                        "all demand satisfied?:",
                         all(v == 0 for v in demand_dict.values()),
                     )
-                    print(demand_dict)
-                    self.create_solution(
+                    vprint(demand_dict)
+                    self._create_solution(
                         solution,
                         sp_truck,
                         drone_target,
@@ -156,10 +158,10 @@ class VRPWDHeuristic_2:
                         demand_dict,
                     )
                     truck_pair_dpd_nodes = [truck_pair_dpd_nodes[-1]]
-        print("if all demand satisfied ? : ", all(v == 0 for v in demand_dict.values()))
+        vprint("if all demand satisfied?:", all(v == 0 for v in demand_dict.values()))
         return solution
 
-    def create_solution(
+    def _create_solution(
         self,
         solution,
         sp_truck,
@@ -168,8 +170,8 @@ class VRPWDHeuristic_2:
         back_tt_list,
         demand_dict,
     ):
-        """create the solution for truck and drone, for current sp truck move"""
-        print("-------CREATE SOLUTION -------")
+        """Create the solution for truck and drone, for current sp truck move"""
+        vprint("------- CREATE SOLUTION -------")
         preparing_drone_time = 30
         delivering_truck_time = 60
         truck_tt = 0
@@ -177,17 +179,17 @@ class VRPWDHeuristic_2:
         # launched_drones = [False if drone_target_list[i] is None else True for i in range(self.number_of_drones)]
         truck_chrono = [0 for i in range(1, self.number_of_drones + 1)]
         truck_destination = sp_truck[-1]
-        print("demand_dict : ", demand_dict)
-        print("truck destination : ", truck_destination)
-        print("truck tt = ", truck_tt)
+        vprint("demand_dict:", demand_dict)
+        vprint("truck_destination:", truck_destination)
+        vprint("truck_tt:", truck_tt)
         # if there is drone to launch
         if not all(t == None for t in drone_target_list):
             # check if there is a drone demand node over the truck sp -> the reaction depends of the policy
             for node in sp_truck:
                 if node in drone_target_list:
                     drone_number = drone_target_list.index(node) + 1
-                    print(
-                        "the node {} (for d{}) is in the truck sp".format(
+                    vprint(
+                        "The node {} (for d{}) is in the truck sp".format(
                             node, drone_number
                         )
                     )
@@ -206,16 +208,16 @@ class VRPWDHeuristic_2:
                         preparing_drone_time,
                         "d{}".format(drone_number),
                     )
-                    print("lauching_drone_event: ", lauching_drone_event)
+                    vprint("lauching_drone_event:", lauching_drone_event)
                     solution["truck"].append(lauching_drone_event)
-                    print("truck_chrono before : ", truck_chrono)
+                    vprint("truck_chrono before:", truck_chrono)
                     truck_chrono = [
                         truck_chrono[i] + preparing_drone_time
                         if launched_drones[i]
                         else truck_chrono[i]
                         for i in range(self.number_of_drones)
                     ]
-                    print("truck_chrono after : ", truck_chrono)
+                    vprint("truck_chrono_after:", truck_chrono)
                     launched_drones[drone_number - 1] = True
                     # create drone go move
                     drone_go_move = (
@@ -248,20 +250,20 @@ class VRPWDHeuristic_2:
             )
             if tt != 0:
                 move_event = (starting_node, node, tt)
-                print("move event : ", move_event)
+                vprint("move_event:", move_event)
                 solution["truck"].append(move_event)
                 truck_chrono = [
                     truck_chrono[i] + tt if launched_drones[i] else truck_chrono[i]
                     for i in range(self.number_of_drones)
                 ]
             if node == truck_destination:
-                print("-------DESTINATION NODE-------")
+                vprint("------- DESTINATION NODE -------")
                 if node in demand_dict.keys():
-                    print("demand : ", demand_dict[node])
-                    print("truck_chrono before delivery", truck_chrono)
+                    vprint("demand:", demand_dict[node])
+                    vprint("truck_chrono_before_deliver:", truck_chrono)
                     # create delivery event
                     delivery_event = (node, node, delivering_truck_time)
-                    print("delivery event : ", delivery_event)
+                    vprint("delivery_event:", delivery_event)
                     truck_chrono = [
                         truck_chrono[i] + delivering_truck_time
                         if launched_drones[i]
@@ -282,42 +284,42 @@ class VRPWDHeuristic_2:
                         for a, b in zip(go_tt_list, back_tt_list)
                         if a != None and b != None
                     ]
-                    print("deal with waiting times")
-                    print("drone tt : ", drone_tt)
-                    print("truck_chrono : ", truck_chrono)
+                    vprint("Deal with waiting times")
+                    vprint("drone_tt:", drone_tt)
+                    vprint("truck_chrono:", truck_chrono)
                     for time_t, time_d in zip(truck_chrono, drone_tt):
                         if time_t != None and time_d != None and time_t <= time_d:
                             after_truck.append(time_d)
                             truck_chrono_for_compared.append(time_t)
                         elif time_t != None and time_d != None and time_t > time_d:
                             before_truck.append(time_d)
-                    print("before_truck : ", before_truck)
-                    print("after_truck : ", after_truck)
-                    print("truck_chrono : ", truck_chrono)
-                    print("drone_tt : ", drone_tt)
+                    vprint("before_truck:", before_truck)
+                    vprint("after_truck:", after_truck)
+                    vprint("truck_chrono:", truck_chrono)
+                    vprint("drone_tt:", drone_tt)
                     # case 1 -> drones wait for the truck
                     if len(before_truck) != 0:
-                        print("drone(s) wait for truck")
+                        vprint("Drone(s) wait for truck")
                         # compute waiting time for each drone
                         for time in before_truck:
-                            print("time : ", time)
+                            vprint("time:", time)
                             drone_index = drone_tt.index(time) + 1
-                            print("drone index : ", drone_index)
+                            vprint("drone_index:", drone_index)
                             d_waiting_time = truck_chrono[drone_index - 1] - time
-                            print("waiting time drone : ", d_waiting_time)
+                            vprint("waiting_time_drone:", d_waiting_time)
                             if d_waiting_time != 0:
                                 if d_waiting_time < 0:
-                                    print("drone waiting time : ", d_waiting_time)
-                                    print("truck chrono : ", truck_chrono)
-                                    print("drone tt time :", drone_tt)
-                                    raise Exception("ERROR , drone waiting time <0")
+                                    vprint("drone_waiting_time:", d_waiting_time)
+                                    vprint("truck_chrono: ", truck_chrono)
+                                    vprint("drone_tt_time:", drone_tt)
+                                    raise Exception("ERROR: drone waiting time < 0")
                             else:
                                 waiting_drone_event = (
                                     truck_destination,
                                     truck_destination,
                                     round(d_waiting_time, 3),
                                 )
-                                print(
+                                vprint(
                                     "waiting_drone_{}_event : {}".format(
                                         drone_index, waiting_drone_event
                                     )
@@ -326,21 +328,21 @@ class VRPWDHeuristic_2:
                                 solution["drone_{}".format(drone_index)].append(
                                     waiting_drone_event
                                 )
-                    # case 2-> truck waits for drones
+                    # case 2 --> truck waits for drones
                     if len(after_truck) != 0:
-                        print("truck waits for drones")
+                        vprint("Truck waits for drones")
                         truck_waiting_time = max(
                             [
                                 d - t
                                 for d, t in zip(after_truck, truck_chrono_for_compared)
                             ]
                         )
-                        print("truck waiting time : ", truck_waiting_time)
+                        vprint("truck_waiting_time:", truck_waiting_time)
                         if truck_waiting_time < 0:
-                            print("truck waiting time : ", truck_waiting_time)
-                            print("truck chrono : ", truck_chrono)
-                            print("drone tt time :", drone_tt)
-                            raise Exception("ERROR , drone waiting time <0")
+                            vprint("truck_waiting_time:", truck_waiting_time)
+                            vprint("truck_chrono:", truck_chrono)
+                            vprint("drone_tt_time:", drone_tt)
+                            raise Exception("ERROR: drone waiting time < 0")
 
                         else:
                             waiting_truck_event = (
@@ -348,11 +350,12 @@ class VRPWDHeuristic_2:
                                 truck_destination,
                                 round(truck_waiting_time, 3),
                             )
-                            print("waiting_truck_event : ", waiting_truck_event)
+                            vprint("waiting_truck_event:", waiting_truck_event)
                             solution["truck"].append(waiting_truck_event)
 
-    def calculate_obj_value(self, solution):
-        """compute objective value for the heuristic solution"""
+    def _calculate_obj_value(self, solution):
+        """Compute objective value for the heuristic solution"""
+
         truck_tour = solution["truck"]
         total_time = 0
         for move in truck_tour:
@@ -360,20 +363,21 @@ class VRPWDHeuristic_2:
         return total_time
 
     def solve(self) -> VRPWDSolution:
-        print("==============SOLVE================")
+        vprint("============== SOLVE ==============")
         start_time = time.time()
-        node_vehicle_dict = self.first_stage_v2()
-        solution = self.second_stage_v2(node_vehicle_dict)
-        print("==========================================")
-        print(solution)
-        print("ordoned demand nodes : ", self.ordoned_demands_nodes)
-        print("ordoned super nodes : ", self.ordoned_super_nodes)
-        print("==========================================")
-        objective_value = self.calculate_obj_value(solution)
-        print("objective value : ", objective_value)
+        node_vehicle_dict = self._first_stage()
+        solution = self._second_stage(node_vehicle_dict)
+        vprint("==========================================")
+        vprint(solution)
+        vprint("ordoned_demand_nodes:", self.ordoned_demands_nodes)
+        vprint("ordoned_super_nodes:", self.ordoned_super_nodes)
+        vprint("==========================================")
+        objective_value = self._calculate_obj_value(solution)
+        vprint("objective_value:", objective_value)
         end_time = time.time()
         processing_time = end_time - start_time
-        print("processing time : {} s".format(processing_time))
+        vprint("processing_time: {} s".format(processing_time))
+
         return VRPWDSolution(
             instance=self.instance,
             algorithm=self.__algorithm,

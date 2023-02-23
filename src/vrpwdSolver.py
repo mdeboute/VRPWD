@@ -1,14 +1,13 @@
 import sys
 
-from VRPWDData import VRPWDData
-from TSPGreedy import TSPGreedy
-from TSPMIPModel import TSPMIPModel
-from VRPWDReducedMIPModel_1 import VRPWDReducedMIPModel_1
-from VRPWDHeuristic_1 import VRPWDHeuristic_1
-from VRPWDHeuristic_2 import VRPWDHeuristic_2
-from VRPWDPathHeuristic_2 import VRPWDPathHeuristic_2
-from VRPWDHeuristic_3 import VRPWDHeuristic_3
-from utils import verbose_print
+from core.VRPWDData import VRPWDData
+from algorithms.tsp.TSPGreedy import TSPGreedy
+from algorithms.tsp.TSPMIPModel import TSPMIPModel
+from algorithms.vrp.VRPWDReducedMIPModel_1 import VRPWDReducedMIPModel_1
+from algorithms.vrp.VRPWDHeuristic_1 import VRPWDHeuristic_1
+from algorithms.vrp.VRPWDHeuristic_2 import VRPWDHeuristic_2
+from algorithms.vrp.VRPWDPathHeuristic_2 import VRPWDPathHeuristic_2
+from core.utils import verbose_print
 
 
 def print_usage():
@@ -16,14 +15,23 @@ def print_usage():
     print("Where:")
     print("<instance_directory> is the directory containing the instance files")
     print("<case> is the case of the problem to solve, can be a number in (0, 1, 2, 3)")
-    print(
-        "<method> is the algorithm to use to solve the case, can be: heuristic or mip (h for short)"
-    )
+    print("<method> is the algorithm to use to solve the case, can be:")
+    print("\tFor case 0:")
+    print("\t\theuristic (h for short)")
+    print("\t\tmip")
+    print("\tFor case 1:")
+    print("\t\theuristic (h for short)")
+    print("\t\tmip")
+    print("\tFor case 2:")
+    print("\t\theuristic (h for short)")
+    print("\t\tpathheuristic")
+    print("\tFor case 3:")
+    print("\t\theuristic (h for short)")
     print(
         "-v or --verbose is an optional argument to print all the information of the execution"
     )
     print("-g or --graphic is an optional argument to plot the solution graph")
-    print("Example: python3 vrpwdSolver.py data/instance_1/ 0 heuristic")
+    print("Example: python3 vrpwdSolver.py data/instance_1/ 0 mip -v -g")
 
 
 def main():
@@ -48,11 +56,11 @@ def main():
 
     if (
         method != "heuristic"
-        and method != "mip"
         and method != "h"
         and method != "pathheuristic"
+        and method != "mip"
     ):
-        print("Method should be heuristic or mip!")
+        print("Method should be heuristic (h for short), pathheuristic or mip!")
         print("Please use -h or --help to see the usage")
         sys.exit(1)
 
@@ -133,8 +141,7 @@ def main():
                 if plot:
                     solution.plot()
     elif case == 3:
-        if method == "heuristic" or method == "h":
-            solution = VRPWDHeuristic_3(data).solve()
+        print("Case 3 is not implemented yet!")
     else:
         print("Case should be a number in (0, 1, 2, 3)!")
         print("Please use -h or --help to see the usage")
