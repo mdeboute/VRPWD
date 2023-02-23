@@ -1,4 +1,4 @@
-# VRPWD
+# Vehicle Routing Problem With Drones (VRPWD)
 
 [Here](./projet.pdf) is the french subject of the La Poste VRP With Drones project.
 
