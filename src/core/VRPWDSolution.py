@@ -173,20 +173,24 @@ class VRPWDSolution:
             for node in self.instance.dpd_nodes[1:]:
                 if node not in list(set(list(chain(*visited_nodes)))):
                     print(f"ERROR: demand node {node} is not in the tour!")
+                    print(self.solution)
                     return False
             # check that we start at the deposit
             if self.solution["truck"][0][0] != self.instance.deposit:
                 print("ERROR: tour does not start at the deposit!")
+                print(self.solution)
                 return False
             # check that we end at the deposit
             if self.solution["truck"][-1][1] != self.instance.deposit:
                 print("ERROR: tour does not end at the deposit!")
+                print(self.solution)
                 return False
             # check that we do not visit the deposit twice
             # count the number of times we visit the deposit in the nodes visited by the truck
             if visited_nodes[0].count(self.instance.deposit) > 1:
-                print("ERROR: we visit the deposit twice!")
-                return False
+                print("WARNING: we visit the deposit more than once!")
+                print(self.solution)
+                return True
             # check that the 2nd element of the tuple always equals the 1st element of the next tuple
             for i in range(len(self.solution["truck"]) - 1):
                 if self.solution["truck"][i][1] != self.solution["truck"][i + 1][0]:

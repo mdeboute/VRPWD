@@ -36,6 +36,10 @@ class TSPGreedy:
         # Add the return to the deposit
         tour.append(0)
 
+        # if the deposit is in the demands nodes, delete the first node of the tour
+        if self.instance.deposit in self.instance.dpd_nodes[1:]:
+            tour = tour[1:]
+
         solution = create_solution(self.instance, tour)
         objective_value = sum(
             solution["truck"][i][2] for i in range(len(solution["truck"]))
