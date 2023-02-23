@@ -161,6 +161,7 @@ class VRPWDHeuristic_1:
                 pass
             else:
                 new_truck_route.append(truck_route[i])
+
         return new_truck_route, drone_1_route, drone_2_route
 
     def solve(self) -> VRPWDSolution:

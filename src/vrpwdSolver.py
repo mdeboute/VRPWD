@@ -116,11 +116,11 @@ def main():
     elif case == 2:
         if method == "heuristic" or method == "h":
             solution = VRPWDHeuristic_2(data, 2, "drone_inter").solve()
-            # if solution.check():
-            #     print(
-            #         f"Result: runtime={solution.runtime:.2f}sec; objective={solution.objective_value:.2f}sec"
-            #     )
-            #     solution.write()
+            if solution.check():
+                print(
+                    f"Result: runtime={solution.runtime:.2f}sec; objective={solution.objective_value:.2f}sec"
+                )
+                solution.write()
             if plot:
                 solution.plot()
         if method == "pathheuristic":
@@ -136,7 +136,8 @@ def main():
         if method == "heuristic" or method == "h":
             solution = VRPWDHeuristic_3(data).solve()
     else:
-        print("Case not implemented yet! Check the usage with -h or --help.")
+        print("Case should be a number in (0, 1, 2, 3)!")
+        print("Please use -h or --help to see the usage")
         sys.exit(1)
 
 

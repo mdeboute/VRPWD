@@ -79,8 +79,8 @@ class VRPWDReducedMIPModel_1:
 
     def __init__(self, instance: VRPWDData):
         self.instance = instance
-        self.__algorithm = "ReducedMIP"
-        self.model = gp.Model("VRPWDR1")
+        self.__algorithm = "Reduced_MIP"
+        self.model = gp.Model("VRPWDR")
         self.nodes = [0] + [
             i
             for i in range(1, len(instance.dpd_nodes))
@@ -186,7 +186,7 @@ class VRPWDReducedMIPModel_1:
         self.model.Params.MIPGap = max_gap
         self.model.Params.Threads = nb_threads
 
-        def subtourelim(model, where):
+        def _subtourelim(model, where):
             if where == GRB.Callback.MIPSOL:
                 # make a list of edges selected in the solution
                 vals = model.cbGetSolution(model._vars[0])
@@ -274,7 +274,7 @@ class VRPWDReducedMIPModel_1:
                     return thiscycle
             return cycle
 
-        def final_truck_tour(edges):
+        def _final_truck_tour(edges):
             unvisited = self.nodes[:]
             drone_covered = {}
             tour = []
@@ -288,7 +288,7 @@ class VRPWDReducedMIPModel_1:
 
         self.model._vars = [self.x, self.y1, self.y2]
         self.model.Params.lazyConstraints = 1
-        self.model.optimize(subtourelim)
+        self.model.optimize(_subtourelim)
 
         # Create solution
         vals = self.model.getAttr("x", self.x)
@@ -301,7 +301,7 @@ class VRPWDReducedMIPModel_1:
             if round(drone1_vals[i, j] + drone2_vals[i, j]) > 0
         }
 
-        truck_tour = final_truck_tour(selected) + [0]
+        truck_tour = _final_truck_tour(selected) + [0]
 
         drone_covered = {}
         for i, j in drone_vals.keys():
@@ -311,10 +311,10 @@ class VRPWDReducedMIPModel_1:
                 drone_covered[i].append(j)
         for i in drone_covered.keys():
 
-            def drone_dist(j):
+            def _drone_dist(j):
                 return self.drone_time[i, j]
 
-            drone_covered[i].sort(key=drone_dist, reverse=True)
+            drone_covered[i].sort(key=_drone_dist, reverse=True)
         solution = self._create_solution(truck_tour, drone_covered)
 
         objective_value = sum(

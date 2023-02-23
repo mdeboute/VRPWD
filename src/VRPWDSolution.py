@@ -118,7 +118,7 @@ class VRPWDSolution:
         return graph
 
     def plot(self):
-        """Plot the graph"""
+        """Plot the solution graph"""
 
         vprint("==================== PLOT GRAPH ====================")
         # Draw graph
@@ -210,7 +210,9 @@ class VRPWDSolution:
         elif self.instance._CASE == 3:
             _classic_check(self)
         else:
-            print("ERROR: checks for that case are not implemented yet!")
+            print("ERROR: unknown case")
+            print("Please use -h or --help to see the usage")
+            return False
         return True
 
     def write(self):
