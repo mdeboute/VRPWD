@@ -11,7 +11,6 @@ from itertools import chain
 
 class VRPWDSolution:
     __BASE_DIR = Path(__file__).resolve().parent.parent.parent
-    print(__BASE_DIR)
 
     def __init__(
         self,
