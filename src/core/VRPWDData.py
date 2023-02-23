@@ -1,14 +1,14 @@
 import pandas as pd
 import geopandas as gpd
 import numpy as np
-import time
 import networkx as nx
 import folium
+import time
 
 from pathlib import Path
 from scipy.spatial import cKDTree
 from geopy.distance import geodesic
-from utils import verbose_print
+from core.utils import verbose_print
 
 
 class VRPWDData:
@@ -34,6 +34,12 @@ class VRPWDData:
         if self._CASE > 0:  # vrp with drones
             self.drone_time_matrix = self._create_drone_time_matrix(drone_speed=50)
 
+    def __str__(self) -> str:
+        return f"Instance: {self._INSTANCE_NAME}, Case: {self._CASE}"
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
     def _create_gdfs(self):
         start_time = time.time()
         vprint("=================== NODES AND EDGES GDF CREATION ===================")
@@ -57,7 +63,6 @@ class VRPWDData:
             if (row["lat_max"], row["lon_max"]) not in coords_dict:
                 coords_dict[(row["lat_max"], row["lon_max"])] = len(coords_dict) + 1
             idx_dest = coords_dict[(row["lat_max"], row["lon_max"])]
-
             length = row["length"]
             osm_id = row["osmid"]
             osm_type = row["type"]
@@ -80,7 +85,6 @@ class VRPWDData:
                     "travel_time": travel_time,
                 }
             )
-
         for coord, _ in coords_dict.items():
             x = coord[0]
             y = coord[1]
@@ -144,8 +148,7 @@ class VRPWDData:
         # Find nearest node with K-D Tree
         _, nearest_node = tree.query(_deposit_gps)
         nearest_node = nearest_node + 1
-        # update the deposit
-        # in the Data object
+        # update the deposit in the Data object
         self.deposit = nearest_node
         # in the graph
         graph.nodes[self.deposit].update({"deposit": True})
@@ -162,7 +165,6 @@ class VRPWDData:
 
         vprint("================== CREATE TIME MATRIX ==================")
         start_time = time.time()
-
         demands_nodes = [
             node for node in self.graph.nodes() if self.graph.nodes[node]["demand"] > 0
         ]
@@ -172,7 +174,6 @@ class VRPWDData:
         demands_nodes.insert(0, self.deposit)
         self.dpd_nodes = demands_nodes
         vprint("dpd_nodes:", self.dpd_nodes)
-
         # create empty matrix
         matrix = np.zeros(shape=(len(demands_nodes), len(demands_nodes)), dtype=float)
         vprint("matrix_shape:", matrix.shape)
@@ -227,7 +228,7 @@ class VRPWDData:
         return matrix
 
     def save_map_html(self):
-        """Plot the nodes on a interactive html map"""
+        """Plot the nodes on an interactive html map"""
 
         # Create map
         m = folium.Map(location=[44.838633, 0.540983], zoom_start=13)
@@ -255,10 +256,8 @@ class VRPWDData:
                     icon=folium.Icon(color="blue"),
                     tooltip=f"{node}",
                 ).add_to(m)
-
         # save the map in a html file
         _assets_path = "assets/" + self._INSTANCE_NAME
         Path(_assets_path).mkdir(parents=True, exist_ok=True)
-
         m.save(_assets_path + "/map.html")
         print(f"HTML Map saved in {_assets_path}/map.html")

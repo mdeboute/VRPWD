@@ -135,6 +135,7 @@ dmypy.json
 solution/
 assets/
 cache/
+log/
 
 # Personal draft
 draft/

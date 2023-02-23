@@ -1,16 +1,15 @@
 import networkx as nx
 import matplotlib.pyplot as plt
-import time
 
 from pathlib import Path
-from utils import verbose_print
-from VRPWDData import VRPWDData
+from core.utils import verbose_print
+from core.VRPWDData import VRPWDData
 from pathlib import Path
 from itertools import chain
 
 
 class VRPWDSolution:
-    __BASE_DIR = Path(__file__).resolve().parent.parent
+    __BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
     def __init__(
         self,
@@ -53,7 +52,6 @@ class VRPWDSolution:
         """Create the graph format of the solution"""
 
         vprint("=================== CREATE GRAPH SOLUTION ===================")
-        start_time = time.time()
         # get solutions for each type  of vehicle
         truck_tour = self.solution["truck"]
         number_of_drones = 2
@@ -111,14 +109,11 @@ class VRPWDSolution:
                         graph.add_edge(
                             src, dest, travel_time=tt, vehicle="drone_{}".format(i + 1)
                         )
-        end_time = time.time()
-        processing_time = end_time - start_time
         vprint("graph:", graph)
-        vprint("processing time:", processing_time)
         return graph
 
     def plot(self):
-        """Plot the graph"""
+        """Plot the solution graph"""
 
         vprint("==================== PLOT GRAPH ====================")
         # Draw graph
@@ -178,20 +173,24 @@ class VRPWDSolution:
             for node in self.instance.dpd_nodes[1:]:
                 if node not in list(set(list(chain(*visited_nodes)))):
                     print(f"ERROR: demand node {node} is not in the tour!")
+                    print(self.solution)
                     return False
             # check that we start at the deposit
             if self.solution["truck"][0][0] != self.instance.deposit:
                 print("ERROR: tour does not start at the deposit!")
+                print(self.solution)
                 return False
             # check that we end at the deposit
             if self.solution["truck"][-1][1] != self.instance.deposit:
                 print("ERROR: tour does not end at the deposit!")
+                print(self.solution)
                 return False
             # check that we do not visit the deposit twice
             # count the number of times we visit the deposit in the nodes visited by the truck
             if visited_nodes[0].count(self.instance.deposit) > 1:
-                print("ERROR: we visit the deposit twice!")
-                return False
+                print("WARNING: we visit the deposit more than once!")
+                print(self.solution)
+                return True
             # check that the 2nd element of the tuple always equals the 1st element of the next tuple
             for i in range(len(self.solution["truck"]) - 1):
                 if self.solution["truck"][i][1] != self.solution["truck"][i + 1][0]:
@@ -207,8 +206,12 @@ class VRPWDSolution:
             _classic_check(self)
         elif self.instance._CASE == 2:
             _classic_check(self)
+        elif self.instance._CASE == 3:
+            _classic_check(self)
         else:
-            print("ERROR: checks for that case are not implemented yet!")
+            print("ERROR: unknown case")
+            print("Please use -h or --help to see the usage")
+            return False
         return True
 
     def write(self):

@@ -3,8 +3,9 @@ import networkx as nx
 
 from gurobipy import GRB
 from itertools import combinations
-from VRPWDData import VRPWDData
-from VRPWDSolution import VRPWDSolution
+from core.VRPWDData import VRPWDData
+from core.VRPWDSolution import VRPWDSolution
+from core.utils import available_cpu_count
 
 
 def create_solution(instance: VRPWDData, tour: list) -> dict:
@@ -34,7 +35,6 @@ class TSPMIPModel:
         self.instance = instance
         self.__algorithm = "MIP"
         self.model = gp.Model("TSP")
-        self.n = len(instance.dpd_time_matrix)
         self.nodes = [0] + [
             i
             for i in range(1, len(instance.dpd_nodes))
@@ -59,9 +59,9 @@ class TSPMIPModel:
 
     def solve(
         self,
-        time_limit: int = 600,
+        time_limit: int = 3600,
         max_gap: float = 0.00001,
-        nb_threads: int = 4,
+        nb_threads: int = available_cpu_count(),
     ) -> VRPWDSolution:
         self.model.Params.OutputFlag = int(self.instance._VERBOSE)
         self.model.Params.TimeLimit = time_limit
@@ -127,7 +127,7 @@ class TSPMIPModel:
                 solution=solution,
                 verbose=self.instance._VERBOSE,
             )
-        elif self.model.Status == GRB.FEASIBLE:
+        elif not self.model.Status == GRB.INF_OR_UNBD:
             return VRPWDSolution(
                 instance=self.instance,
                 algorithm=self.__algorithm,

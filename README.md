@@ -1,19 +1,17 @@
-# VRPWD
+# Vehicle Routing Problem With Drones (VRPWD)
 
 [Here](./projet.pdf) is the french subject of the La Poste VRP With Drones project.
 
 You'll need to have Python 3.8+ installed.
 Don't forget to do a `pip install -r requirements.txt` before running the code.
 
-For the main program:
+**_For the main program_**:
 
-Type `python3 src/vrpwdSolver.py -h` for help.
+* Type `python3 src/vrpwdSolver.py -h` for help.
 
-## Social Networks
+**_For the benchmark (don't forget to do a `chmod +x benchmark.sh`)_**:
 
-* Notion [here](https://www.notion.so/astral-agency/7a1486aff5da4701940d0b423bcd0d48?v=c1946cbaf6884adaa18bbe71a7ccfa28)
-* Overleaf [here](https://l.messenger.com/l.php?u=https%3A%2F%2Fwww.overleaf.com%2F7247433974xnjmmvhzkqjr&h=AT39ufLhpJ7YwqAEoy17tP6CHyWdVP04OskifxIjZ9HtbnHy20vQbn_LDfzb77Vj1WULdPhleb8o7u-tvfjc2s3SOwLTrcYbQ2WKL_SfrGcR3vRCU8gy3VYFH7WlVGtJiAlA9KMzug8)
-* Discord [here](https://discord.gg/NDpJqBMm)
+* Type ./benchmark.sh -h for help.
 
 ## Coding Rules
 

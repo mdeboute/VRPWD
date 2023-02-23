@@ -2,28 +2,32 @@ import time
 import gurobipy as gp
 import networkx as nx
 
-from VRPWDData import VRPWDData
-from TSPMIPModel import TSPMIPModel
-from VRPWDSolution import VRPWDSolution
-from utils import verbose_print
+from core.VRPWDData import VRPWDData
+from algorithms.tsp.TSPMIPModel import TSPMIPModel
+from core.VRPWDSolution import VRPWDSolution
 from gurobipy import GRB
+from core.utils import available_cpu_count, verbose_print
 
 
 class VRPWDPathHeuristic_2:
     def __init__(self, instance: VRPWDData):
         self.instance = instance
         self.__algorithm = "Path_Heuristic"
-        tsp_solution = TSPMIPModel(self.instance).solve()
-        self.init_sol = tsp_solution.solution
-        self.init_runtime = tsp_solution.runtime
-        # First and last tuples of truck are (depot, depot, 0, 0) to signal start and stop. Useful for heuristic
+        self.tsp_solution = TSPMIPModel(self.instance).solve()
+        self.init_sol = self.tsp_solution.solution
+        self.init_runtime = self.tsp_solution.runtime
+        # First and last tuples of truck are (depot, depot, 0, 0) to signal start and stop.
+        # Useful for the heuristic
         self.init_sol["truck"].append((instance.deposit, instance.deposit, 0.0, 0.0))
         if self.init_sol["truck"][0][0] != self.init_sol["truck"][0][1]:
             self.init_sol["truck"].insert(
                 0, (instance.deposit, instance.deposit, 0.0, 0.0)
             )
 
-    def create_solution(self, selected_paths, gained_time):
+        global vprint
+        vprint = verbose_print(self.instance._VERBOSE)
+
+    def _create_solution(self, selected_paths: dict, gained_time):
         solution = {"truck": [], "drone_1": [], "drone_2": []}
         last_drone_used = 2
         init_truck = self.init_sol["truck"]
@@ -81,17 +85,15 @@ class VRPWDPathHeuristic_2:
             t += 1
         for tup in solution["truck"]:
             if tup[2] == 0.0:
-                # print(tup)
                 solution["truck"].remove(tup)
         return solution
 
-    def init_sol_demand_paths(self, demand_limit=2):
+    def _init_sol_demand_paths(self, demand_limit=2):
         truck = self.init_sol["truck"]
         complete_paths = []
         incomplete_paths = [[truck[0]]]
-        inc_pth_cml_demand = [
-            0
-        ]  # total sustified demand on given path, excluding the demand nodes at the extremities of the path
+        inc_pth_cml_demand = [0]  # total sustified demand on given path,
+        # excluding the demand nodes at the extremities of the path
         path_start_index = [0]
         for i in range(1, len(truck)):
             step = truck[i]
@@ -104,7 +106,7 @@ class VRPWDPathHeuristic_2:
                         if inc_pth_cml_demand[p] > 0:
                             incomplete_paths[p].append(step)
 
-                            path_cost = self.calculate_drone_path_cover_cost(
+                            path_cost = self._calculate_drone_path_cover_cost(
                                 incomplete_paths[p]
                             )
                             if (
@@ -140,7 +142,7 @@ class VRPWDPathHeuristic_2:
                     path.append(step)
         return complete_paths
 
-    def calculate_drone_path_cover_cost(
+    def _calculate_drone_path_cover_cost(
         self, path
     ):  # assuming a maximum of 2 drone deliveries can be done on this path
         old_path_cost = sum(arc[2] for arc in path)
@@ -187,7 +189,7 @@ class VRPWDPathHeuristic_2:
             drone2_cost,
         )
 
-    def calculate_path_overlap_matrix(self, paths):
+    def _calculate_path_overlap_matrix(self, paths):
         ovlp_matrix = [[False for _ in range(len(paths))] for _ in range(len(paths))]
         for i in range(len(paths)):
             for j in range(i):
@@ -204,7 +206,7 @@ class VRPWDPathHeuristic_2:
                     )
         return ovlp_matrix
 
-    def calculate_interpath_time_gain_matrix(self, paths):
+    def _calculate_interpath_time_gain_matrix(self, paths):
         iptg_matrix = [[0 for _ in range(i + 1)] for i in range(len(paths))]
         truck = self.init_sol["truck"]
 
@@ -235,19 +237,19 @@ class VRPWDPathHeuristic_2:
 
     def solve(
         self,
-        time_limit: int = 600,
+        time_limit: int = 3600,
         max_gap: float = 0.00001,
-        nb_threads: int = 4,
+        nb_threads: int = available_cpu_count(),
     ):
         start_preprocess_time = time.time()
-        paths_info = self.init_sol_demand_paths()
-        overlap_matrix = self.calculate_path_overlap_matrix(paths_info)
-        inter_path_time_gain_matrix = self.calculate_interpath_time_gain_matrix(
+        paths_info = self._init_sol_demand_paths()
+        overlap_matrix = self._calculate_path_overlap_matrix(paths_info)
+        inter_path_time_gain_matrix = self._calculate_interpath_time_gain_matrix(
             paths_info
         )
         preprocess_time = time.time() - start_preprocess_time
 
-        model = gp.Model("Minimum Paths Selection Problem")
+        model = gp.Model("Minimum_Paths_Selection_Problem")
         n = len(paths_info)
         paths = [i for i in range(n)]
         gain_time = {i: paths_info[i]["gain"] for i in paths}
@@ -291,12 +293,18 @@ class VRPWDPathHeuristic_2:
         selected_paths = {i: paths_info[i] for i in paths if x_vals[i] > 0.5}
         gained_time = {i: z_vals[i] for i in paths if x_vals[i] > 0.5}
 
-        solution = self.create_solution(selected_paths, gained_time)
+        solution = self._create_solution(selected_paths, gained_time)
         objective_value = sum(
             solution["truck"][i][2] for i in range(len(solution["truck"]))
         )
         runtime = self.init_runtime + preprocess_time + model.Runtime
         gap = model.MIPGap * 100
+
+        vprint(f"Initial objective value: {self.tsp_solution.objective_value}")
+        vprint(f"New objective value: {objective_value}")
+        vprint(
+            f"So a decrease of: {(self.tsp_solution.objective_value - objective_value) / self.tsp_solution.objective_value * 100:.2f}%\n"
+        )
 
         if model.Status == GRB.OPTIMAL:
             return VRPWDSolution(
@@ -308,7 +316,7 @@ class VRPWDPathHeuristic_2:
                 solution=solution,
                 verbose=self.instance._VERBOSE,
             )
-        elif model.Status == GRB.FEASIBLE:
+        elif not self.model.Status == GRB.INF_OR_UNBD:
             return VRPWDSolution(
                 instance=self.instance,
                 algorithm=self.__algorithm,

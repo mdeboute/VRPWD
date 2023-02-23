@@ -1,9 +1,9 @@
-from VRPWDData import VRPWDData
-from TSPMIPModel import TSPMIPModel
-from utils import verbose_print
+from core.VRPWDData import VRPWDData
+from algorithms.tsp.TSPMIPModel import TSPMIPModel
+from core.utils import verbose_print
 import time
 import networkx as nx
-from VRPWDSolution import VRPWDSolution
+from core.VRPWDSolution import VRPWDSolution
 
 
 class VRPWDHeuristic_2:
