@@ -38,7 +38,7 @@ class TSPGreedy:
 
         solution = create_solution(self.instance, tour)
         objective_value = sum(
-            solution["truck"][i][-1] for i in range(len(solution["truck"]))
+            solution["truck"][i][2] for i in range(len(solution["truck"]))
         )
 
         end = time.time()

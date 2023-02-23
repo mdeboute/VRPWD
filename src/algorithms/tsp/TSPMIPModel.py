@@ -35,7 +35,6 @@ class TSPMIPModel:
         self.instance = instance
         self.__algorithm = "MIP"
         self.model = gp.Model("TSP")
-        self.n = len(instance.dpd_time_matrix)
         self.nodes = [0] + [
             i
             for i in range(1, len(instance.dpd_nodes))
