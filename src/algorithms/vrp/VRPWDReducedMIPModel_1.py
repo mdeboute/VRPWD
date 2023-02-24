@@ -212,11 +212,10 @@ class VRPWDReducedMIPModel_1:
                         if i in tour and j in tour
                     )
                     model.cbLazy(
-                        nt_demand * gp.quicksum(
-                            model._vars[0][a, b]
-                            for a, b in tour_routes
-                        )
-                        <= len(tour_routes) * nt_demand
+                        nt_demand
+                        * gp.quicksum(model._vars[0][a, b] for a, b in tour_routes)
+                        <= len(tour_routes)
+                        * nt_demand
                         * gp.quicksum(
                             model._vars[0][i, j]
                             for i, j in model._vars[0].keys()
