@@ -251,7 +251,7 @@ class VRPWDSolution:
             if d["vehicle"] == "truck"
         ]
         # Create a map with Folium
-        m = folium.Map(location=list(positions.values())[0], zoom_start=10)
+        m = folium.Map(location=list(positions.values())[0], zoom_start=13)
 
         # Add lines to represent roads
         for line in lines_d1:
