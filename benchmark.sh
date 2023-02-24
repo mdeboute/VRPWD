@@ -17,7 +17,7 @@ usage() {
             echo -e "\t$m"
         done
     done
-    echo "Example: $(basename "$0") -d data/ -c 0 -m mip"
+    echo "Example: ./$(basename "$0") -d data/ -c 0 -m mip"
     exit 1
 }
 

@@ -211,27 +211,36 @@ class VRPWDReducedMIPModel_1:
                         for i, j in model._vars[0].keys()
                         if i in tour and j in tour
                     )
-                    model.cbLazy(
-                        nt_demand
-                        * gp.quicksum(model._vars[0][a, b] for a, b in tour_routes)
-                        <= len(tour_routes)
-                        * nt_demand
-                        * gp.quicksum(
-                            model._vars[0][i, j]
-                            for i, j in model._vars[0].keys()
-                            if i in tour and j not in tour
-                        )
-                        + gp.quicksum(
-                            model._vars[1][i, j]
-                            for i, j in model._vars[1].keys()
-                            if i in tour and j not in tour
-                        )
-                        + gp.quicksum(
-                            model._vars[2][i, j]
-                            for i, j in model._vars[2].keys()
-                            if i in tour and j not in tour
-                        )
-                    )
+                    for a, b in tour_routes:
+                        if 0 in tour:
+                            model.cbLazy(
+                                nt_demand * model._vars[0][a, b]
+                                <= nt_demand
+                                * gp.quicksum(
+                                    model._vars[0][i, j]
+                                    for i, j in model._vars[0].keys()
+                                    if i in tour and j not in tour
+                                )
+                                + gp.quicksum(
+                                    model._vars[1][i, j]
+                                    for i, j in model._vars[1].keys()
+                                    if i in tour and j not in tour
+                                )
+                                + gp.quicksum(
+                                    model._vars[2][i, j]
+                                    for i, j in model._vars[2].keys()
+                                    if i in tour and j not in tour
+                                )
+                            )
+                        else:
+                            model.cbLazy(
+                                model._vars[0][a, b]
+                                <= gp.quicksum(
+                                    model._vars[0][i, j]
+                                    for i, j in model._vars[0].keys()
+                                    if i in tour and j not in tour
+                                )
+                            )
 
         # Given a tuplelist of edges, find the shortest subtour
         # Tour = all the nodes traveled and covered by the vehicle and its drones in a non disjoint path
