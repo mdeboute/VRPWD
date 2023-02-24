@@ -91,8 +91,8 @@ def main():
                     f"Result: runtime={solution.runtime:.2f}sec; objective={solution.objective_value:.2f}sec"
                 )
                 solution.write()
+                solution.save_sol_html()
                 if plot:
-                    solution.plot_html()
                     solution.plot()
 
         if method == "mip":
@@ -102,8 +102,8 @@ def main():
                     f"Result: runtime={solution.runtime:.2f}sec; objective={solution.objective_value:.2f}sec; gap={solution.gap:.4f}%"
                 )
                 solution.write()
+                solution.save_sol_html()
                 if plot:
-                    solution.plot_html()
                     solution.plot()
 
     elif case == 1:
@@ -114,8 +114,8 @@ def main():
                     f"Result: runtime={solution.runtime:.2f}sec; objective={solution.objective_value:.2f}sec; gap={solution.gap:.4f}%"
                 )
                 solution.write()
+                solution.save_sol_html()
                 if plot:
-                    solution.plot_html()
                     solution.plot()
 
         if method == "heuristic" or method == "h":
@@ -125,8 +125,8 @@ def main():
                     f"Result: runtime={solution.runtime:.2f}sec; objective={solution.objective_value:.2f}sec"
                 )
                 solution.write()
+                solution.save_sol_html()
                 if plot:
-                    solution.plot_html()
                     solution.plot()
     elif case == 2:
         if method == "heuristic" or method == "h":
@@ -136,8 +136,8 @@ def main():
                     f"Result: runtime={solution.runtime:.2f}sec; objective={solution.objective_value:.2f}sec"
                 )
                 solution.write()
+                solution.save_sol_html()
             if plot:
-                solution.plot_html()
                 solution.plot()
         if method == "pathheuristic" or method == "ph":
             solution = VRPWDPathHeuristic_2(data).solve()
@@ -146,8 +146,8 @@ def main():
                     f"Result: runtime={solution.runtime:.2f}sec; objective={solution.objective_value:.2f}sec"
                 )
                 solution.write()
+                solution.save_sol_html()
                 if plot:
-                    solution.plot_html()
                     solution.plot()
     elif case == 3:
         print("Case 3 is not implemented yet!")
