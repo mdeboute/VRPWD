@@ -63,7 +63,7 @@ class VRPWDSolution:
             coords = self.instance.graph.nodes[node]["coordinates"]
             inversed_coords = (coords[1], coords[0])  # another networkx curiosity 0_0??
             graph.add_node(
-                node, coordinates=inversed_coords, deposit=False, demand=demand_value
+                node, coordinates=inversed_coords, deposit=False, intermediate=False, demand=demand_value
             )
         # add deposit node
         graph_coords_deposit = self.instance.graph.nodes[self.instance.deposit][
@@ -77,6 +77,7 @@ class VRPWDSolution:
             self.instance.deposit,
             coordinates=inversed_graph_coords_deposit,
             deposit=True,
+            intermediate=False,
             demand=0,
         )
         # any case -> truck tour
@@ -93,7 +94,7 @@ class VRPWDSolution:
                     dest_coords = self.instance.graph.nodes[dest]["coordinates"]
                     inversed_dest_coords = (dest_coords[1], dest_coords[0])
                     graph.add_node(
-                        dest, coordinates=inversed_dest_coords, deposit=False, demand=0
+                        dest, coordinates=inversed_dest_coords, deposit=False, intermediate=False,demand=0
                     )
                 graph.add_edge(src, dest, travel_time=tt, vehicle="truck")
         # case 1,2,3 -> add drone edges
@@ -112,22 +113,24 @@ class VRPWDSolution:
         vprint("graph:", graph)
         return graph
 
-    def plot(self):
+    def plot(self,graph=None):
         """Plot the solution graph"""
 
         vprint("==================== PLOT GRAPH ====================")
+        if graph==None:
+            graph=self.graph
         # Draw graph
-        coordinates = nx.get_node_attributes(self.graph, "coordinates")
+        coordinates = nx.get_node_attributes(graph, "coordinates")
         node_colors = []
         edge_colors = []
-        for node in self.graph.nodes():
-            if self.graph.nodes[node]["deposit"]:
+        for node in graph.nodes():
+            if graph.nodes[node]["deposit"]:
                 node_colors.append("g")
-            elif self.graph.nodes[node]["demand"] > 0:
+            elif graph.nodes[node]["demand"] > 0:
                 node_colors.append("r")
             else:
                 node_colors.append("b")
-        for _, _, d in self.graph.edges(data=True):
+        for _, _, d in graph.edges(data=True):
             # print(d)
             if d["vehicle"] == "truck":
                 edge_colors.append("black")
@@ -136,7 +139,7 @@ class VRPWDSolution:
             elif d["vehicle"] == "drone_2":
                 edge_colors.append("yellow")
         nx.draw(
-            self.graph,
+            graph,
             coordinates,
             node_color=node_colors,
             edge_color=edge_colors,
@@ -146,6 +149,113 @@ class VRPWDSolution:
         )
         # Show plot
         plt.show()
+    
+    def create_artificial_graph(self,L):
+        """create the artificial graph (ie segmented edges) from the solution graph"""
+        vprint('======CREATE ARTIFICIAL GRAPH============')
+        from geopy.distance import distance
+        from shapely.geometry import LineString, Point
+        graph_copy = self.graph.copy()
+        graph_copy2 = self.graph.copy()
+
+        # Parcourir tous les arcs du graphe
+        for u, v, data in graph_copy.out_edges(data=True):
+            # Calculer la longueur de l'arc
+            is_truck=False
+            #print('data : ',data)
+            length=data['travel_time']
+            if data['vehicle']=='truck': is_truck=True
+
+            #print('length : ',length)
+            # Si l'arc est plus long que la longueur seuil L
+            if is_truck and length > L:
+                # Calculer le nombre de sous-arcs nécessaires
+                num_segments = int(length / L)
+                #print('num_segments : ',num_segments)
+                # Créer les points de division
+                points = [graph_copy.nodes[u]['coordinates']]
+                for i in range(1, num_segments):
+                    frac = i / num_segments
+                    #print('frac : ',frac)
+                    point = LineString([graph_copy.nodes[u]['coordinates'], graph_copy.nodes[v]['coordinates']]).interpolate(frac, normalized=True)
+                    points.append((point.x, point.y))
+                points.append(graph_copy.nodes[v]['coordinates'])
+                # Ajouter de nouveaux nœuds pour chaque point de division
+                for i in range(len(points) - 1):
+                    coordinates = (points[i][0], points[i][1]) # Attention inversion de latitude et longitude
+                    new_nodes=[]
+                    if i == 0:
+                        new_u = u
+                    else:
+                        new_u = f"split_{u}_{i}"
+                        new_nodes.append((new_u, coordinates))
+                    if i == len(points) - 2:
+                        new_v = v
+                    else:
+                        new_v = f"split_{u}_{i+1}"
+                        new_nodes.append((new_v,(points[i+1][0], points[i+1][1])))
+                    # Ajouter des arcs entre les nouveaux nœuds
+                    for node in new_nodes:
+                        graph_copy2.add_node(node[0], coordinates=node[1],deposit=False,demand=0,intermediate=True)
+                    graph_copy2.add_edge(new_u, new_v, **data)
+                # Supprimer l'arc d'origine
+                graph_copy2.remove_edge(u, v)
+        #print('self.graph : ',self.graph)
+        #print('graphcopy2 : ',graph_copy2)
+        return graph_copy2
+
+
+    def plot_html(self):
+        """plot the solution on a dynamic map"""
+        vprint('=========PLOT HTML========')
+        import folium
+        from shapely.geometry import Point, LineString
+        graph=self.create_artificial_graph(4)
+        intermediate_nodes=[]
+        for node, data in graph.nodes(data=True):
+            if data['intermediate']:
+                intermediate_nodes.append(node)
+        # Convertir les données graphiques de NetworkX en objets géométriques Shapely
+        positions = {k:(v[1],v[0]) for k,v in nx.get_node_attributes(graph, 'coordinates').items()}            
+        points = {node: Point(positions[node]) for node in positions}
+        lines_d1 = [LineString([positions[u], positions[v]]) for u, v, d in graph.edges(data=True) if d['vehicle']=='drone_1']
+        lines_d2 = [LineString([positions[u], positions[v]]) for u, v, d in graph.edges(data=True) if d['vehicle']=='drone_2']
+        lines_truck = [LineString([positions[u], positions[v]]) for u, v, d in graph.edges(data=True) if d['vehicle']=='truck']
+        # Créer une carte avec Folium
+        m = folium.Map(location=list(positions.values())[0], zoom_start=10)
+
+        # Ajouter des lignes pour représenter les routes
+        for line in lines_d1:
+            coords = list(line.coords)
+            folium.PolyLine(coords, color='green', weight=2, opacity=1).add_to(m)
+        for line in lines_d2:
+            coords = list(line.coords)
+            folium.PolyLine(coords, color='yellow', weight=2, opacity=1).add_to(m)
+        for line in lines_truck:
+            coords = list(line.coords)
+            folium.PolyLine(coords, color='black', weight=2, opacity=1).add_to(m)
+
+        # Ajouter des marqueurs pour représenter les nœuds de demande
+        for node, point in points.items():
+            if node==self.instance.deposit:
+                color='green'
+                folium.Marker(list(point.coords)[0], icon=folium.Icon(color=color),tooltip=f"{node}").add_to(m)
+            elif node in self.instance.dpd_nodes:
+                color = 'red'
+                folium.Marker(list(point.coords)[0], icon=folium.Icon(color=color),tooltip=f"{node}").add_to(m)
+            elif node in intermediate_nodes:
+                pass
+            else:
+                color='blue'
+                folium.Marker(list(point.coords)[0], icon=folium.Icon(color=color),tooltip=f"{node}").add_to(m)
+
+        # Afficher la carte
+        m
+        #save the map
+        Path(self.__SOLUTION_DIR).mkdir(parents=True, exist_ok=True)
+        m.save(self.__SOLUTION_DIR + "/solution.html")
+        print("HTML Map saved in {} ".format(self.__SOLUTION_DIR + "/solution_.html"))
+
 
     def _get_vistited_nodes(self):
         nodes_visited_by_truck = []

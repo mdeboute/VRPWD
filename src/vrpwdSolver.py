@@ -92,6 +92,7 @@ def main():
                 )
                 solution.write()
                 if plot:
+                    solution.plot_html()
                     solution.plot()
 
         if method == "mip":
@@ -102,6 +103,7 @@ def main():
                 )
                 solution.write()
                 if plot:
+                    solution.plot_html()
                     solution.plot()
 
     elif case == 1:
@@ -113,6 +115,7 @@ def main():
                 )
                 solution.write()
                 if plot:
+                    solution.plot_html()
                     solution.plot()
 
         if method == "heuristic" or method == "h":
@@ -123,6 +126,7 @@ def main():
                 )
                 solution.write()
                 if plot:
+                    solution.plot_html()
                     solution.plot()
     elif case == 2:
         if method == "heuristic" or method == "h":
@@ -133,6 +137,7 @@ def main():
                 )
                 solution.write()
             if plot:
+                solution.plot_html()
                 solution.plot()
         if method == "pathheuristic" or method == "ph":
             solution = VRPWDPathHeuristic_2(data).solve()
@@ -142,6 +147,7 @@ def main():
                 )
                 solution.write()
                 if plot:
+                    solution.plot_html()
                     solution.plot()
     elif case == 3:
         print("Case 3 is not implemented yet!")
