@@ -292,7 +292,7 @@ class VRPWDSolution:
         # save the map
         _assets_path = "assets/" + self.instance._INSTANCE_NAME
         Path(_assets_path).mkdir(parents=True, exist_ok=True)
-        m.save(_assets_path + "/solution.html")
+        m.save(_assets_path + "/" + self.algorithm + "_solution.html")
         print(f"HTML Map saved in {_assets_path}/{self.algorithm}_solution.html")
 
     def _get_vistited_nodes(self):
