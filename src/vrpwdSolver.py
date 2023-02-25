@@ -7,6 +7,7 @@ from algorithms.vrp.VRPWDReducedMIPModel_1 import VRPWDReducedMIPModel_1
 from algorithms.vrp.VRPWDHeuristic_1 import VRPWDHeuristic_1
 from algorithms.vrp.VRPWDHeuristic_2 import VRPWDHeuristic_2
 from algorithms.vrp.VRPWDPathHeuristic_2 import VRPWDPathHeuristic_2
+from algorithms.vrp.VRPWDHeuristic_3 import VRPWDHeuristic_3
 from core.utils import verbose_print
 
 
@@ -150,7 +151,16 @@ def main():
                 if plot:
                     solution.plot()
     elif case == 3:
-        print("Case 3 is not implemented yet!")
+        if method == "heuristic" or method == "h":
+            solution = VRPWDHeuristic_3(data).solve()
+            # if solution.check():
+            #     print(
+            #         f"Result: runtime={solution.runtime:.2f}sec; objective={solution.objective_value:.2f}sec"
+            #     )
+            #     solution.write()
+            #     solution.save_sol_html()
+            #     if plot:
+            #         solution.plot()
     else:
         print("Case should be a number in (0, 1, 2, 3)!")
         print("Please use -h or --help to see the usage")
