@@ -212,7 +212,8 @@ class VRPWDReducedMIPModel_1:
                         if i in tour and j in tour
                     )
                     model.cbLazy(
-                        nt_demand * gp.quicksum(
+                        nt_demand
+                        * gp.quicksum(
                             model._vars[0][i, j]
                             for i, j in model._vars[0].keys()
                             if i in tour and j not in tour
@@ -226,7 +227,8 @@ class VRPWDReducedMIPModel_1:
                             model._vars[2][i, j]
                             for i, j in model._vars[2].keys()
                             if i in tour and j not in tour
-                        ) >= nt_demand
+                        )
+                        >= nt_demand
                     )
 
         # Given a tuplelist of edges, find the shortest subtour

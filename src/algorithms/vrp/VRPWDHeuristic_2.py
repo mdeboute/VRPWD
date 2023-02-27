@@ -324,7 +324,7 @@ class VRPWDHeuristic_2:
                 )
                 # create the solution from the dictionary
                 new_sol, is_feasible = self.second_stage(new_node_vehicle_dict)
-                # Calculate the cost of the new solution
+                # calculate the cost of the new solution
                 new_obj = self._calculate_obj_value(new_sol)
                 if new_obj < best_obj and is_feasible:
                     node_vehicle_dict = new_node_vehicle_dict.copy()
@@ -333,7 +333,7 @@ class VRPWDHeuristic_2:
                     best_sol = new_sol
                     best_node_vehicle_dict = node_vehicle_dict
                     is_improved = True
-                # Otherwise, go back to the previous solution
+                # otherwise, go back to the previous solution
                 else:
                     (
                         new_node_vehicle_dict[k],
@@ -346,7 +346,7 @@ class VRPWDHeuristic_2:
             best_sol = solution
             best_obj = self._calculate_obj_value(solution)
             best_node_vehicle_dict = node_vehicle_dict
-        # Return the modified dictionary or the original dictionary if no modification has been made
+        # return the modified dictionary or the original dictionary if no modification has been made
         end_time = time.time()
         processing_time = end_time - start_time
         vprint("processing_time:", processing_time)

@@ -151,6 +151,7 @@ def main():
                     solution.plot()
     elif case == 3:
         print("Case 3 is not implemented yet!")
+        # TODO: implement case 3 (c.f. branch dev)
     else:
         print("Case should be a number in (0, 1, 2, 3)!")
         print("Please use -h or --help to see the usage")

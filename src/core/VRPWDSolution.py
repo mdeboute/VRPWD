@@ -107,6 +107,7 @@ class VRPWDSolution:
                         demand=0,
                     )
                 graph.add_edge(src, dest, travel_time=tt, vehicle="truck")
+
         # case 1,2,3 -> add drone edges
         if self.instance._CASE > 0:
             for i in range(number_of_drones):

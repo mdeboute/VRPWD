@@ -1,6 +1,6 @@
 # Vehicle Routing Problem With Drones (VRPWD)
 
-[Here](./project.pdf) is the french subject of the La Poste VRP With Drones project. And [here](./report.pdf) is the french report of the project.
+[Here](./project.pdf) is the french subject of the La Poste VRP With Drones project. [Here](./report.pdf) is the french report of the project. And finally, [here](./slides.pdf) is the french presentation of the project.
 
 You'll need to have Python 3.8+ installed.
 Don't forget to do a `pip install -r requirements.txt` before running the code.

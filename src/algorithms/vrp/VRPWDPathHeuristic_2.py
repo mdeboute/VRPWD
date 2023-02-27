@@ -16,8 +16,8 @@ class VRPWDPathHeuristic_2:
         self.tsp_solution = TSPMIPModel(self.instance).solve()
         self.init_sol = self.tsp_solution.solution
         self.init_runtime = self.tsp_solution.runtime
-        # First and last tuples of truck are (depot, depot, 0, 0) to signal start and stop.
-        # Useful for the heuristic
+        # first and last tuples of truck are (depot, depot, 0, 0) to signal start and stop.
+        # useful for the heuristic
         self.init_sol["truck"].append((instance.deposit, instance.deposit, 0.0, 0.0))
         if self.init_sol["truck"][0][0] != self.init_sol["truck"][0][1]:
             self.init_sol["truck"].insert(
@@ -285,7 +285,7 @@ class VRPWDPathHeuristic_2:
 
         model.optimize()
 
-        # Create solution
+        # create solution
         x_vals = model.getAttr("x", x)
         y_vals = model.getAttr("x", y)
         z_vals = model.getAttr("x", z)
